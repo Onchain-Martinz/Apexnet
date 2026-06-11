@@ -1,0 +1,58 @@
+# deps
+node_modules/
+.pnp
+.pnp.js
+
+# next.js
+.next/
+out/
+build/
+
+# env
+.env
+.env.local
+.env.development
+.env.development.local
+.env.production
+.env.production.local
+.env.test.local
+
+# uploads
+public/uploads/*
+!public/uploads/.gitkeep
+
+# logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# mac
+.DS_Store
+
+# prisma local artifacts
+prisma/dev.db
+prisma/dev.db-journal
+prisma/migrations/dev.db
+
+# cache
+.cache/
+.turbo/
+
+# editor
+.vscode/
+.idea/
+
+# Claude / Cursor local files
+.claude/
+.cursor/
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# misc
+*.pem

@@ -1,0 +1,108 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Apex Design System — v2
+ * Palette: monochromatic, Apple-inspired, no blue.
+ * All colour values are HSL components (no `hsl()` wrapper)
+ * so Tailwind can compose opacity modifiers: bg-primary/10.
+ */
+
+@layer base {
+  :root {
+    /* ── Surfaces ─────────────────────────────────── */
+    --background:           0 0% 100%;        /* #FFFFFF */
+    --background-subtle:    220 14% 97%;      /* #F9FAFB — auth page bg */
+    --foreground:           221 39% 11%;      /* #111827 — primary text  */
+
+    /* ── Card ─────────────────────────────────────── */
+    --card:                 0 0% 100%;        /* #FFFFFF */
+    --card-foreground:      221 39% 11%;      /* #111827 */
+    --card-border:          220 14% 96%;      /* #F3F4F6 */
+
+    /* ── Primary action (dark, not blue) ─────────── */
+    --primary:              221 39% 11%;      /* #111827 */
+    --primary-foreground:   0 0% 100%;        /* #FFFFFF */
+
+    /* ── Muted ────────────────────────────────────── */
+    --muted:                220 14% 96%;      /* #F3F4F6 */
+    --muted-foreground:     220 9% 46%;       /* #6B7280 — secondary text */
+
+    /* ── Semantic ─────────────────────────────────── */
+    --success:              160 84% 39%;      /* #10B981 */
+    --success-foreground:   0 0% 100%;
+    --warning:              38 92% 50%;       /* #F59E0B */
+    --warning-foreground:   221 39% 11%;
+    --destructive:          0 84% 60%;        /* #EF4444 */
+    --destructive-foreground: 0 0% 100%;
+
+    /* ── Borders & inputs ─────────────────────────── */
+    --border:               220 13% 91%;      /* #E5E7EB */
+    --input:                220 13% 91%;
+    --ring:                 221 39% 11%;      /* focus ring = primary */
+
+    /* ── Border radii (Apex spec) ─────────────────── */
+    --radius-card:          20px;
+    --radius-button:        14px;
+    --radius-input:         14px;
+    --radius-nav:           24px;             /* active nav pill */
+
+    /* ── Safe area ────────────────────────────────── */
+    --safe-top:    env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+    box-sizing: border-box;
+  }
+
+  html {
+    scrollbar-gutter: stable;
+    -webkit-overflow-scrolling: touch;
+    text-size-adjust: 100%;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-1;
+  }
+}
+
+@layer utilities {
+  /* ── Safe area helpers ──────────────────────────── */
+  .pb-safe      { padding-bottom: var(--safe-bottom); }
+  .pt-safe      { padding-top: var(--safe-top); }
+  .mb-nav       { margin-bottom: calc(72px + var(--safe-bottom)); }
+  .pb-nav       { padding-bottom: calc(72px + var(--safe-bottom)); }
+
+  /* ── Touch target (Apple HIG: 44×44 pt) ────────── */
+  .touch-target { min-height: 44px; min-width: 44px; }
+
+  /* ── Scrollbar hide ─────────────────────────────── */
+  .scrollbar-hide                   { -ms-overflow-style: none; scrollbar-width: none; }
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+
+  /* ── Line clamp ─────────────────────────────────── */
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
