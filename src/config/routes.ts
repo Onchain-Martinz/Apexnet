@@ -15,10 +15,12 @@ export const routes = {
   // Student (root is the post-login landing)
   student: {
     root: "/student",
+    discover: "/student/discover",
     library: "/student/library",
     courses: "/student/courses",
     settings: "/student/settings",
     book: (id: string) => `/student/library/${id}`,
+    purchaseCallback: "/student/purchases/callback",
   },
 
   // Lecturer (root is the post-login landing)
@@ -48,5 +50,12 @@ export const routes = {
     books: "/api/books",
     courses: "/api/courses",
     users: "/api/users",
+    textbooks: "/api/textbooks",
+    library: "/api/library",
+    purchases: {
+      initialize: "/api/purchases/initialize",
+      verify: "/api/purchases/verify",
+    },
+    paystackWebhook: "/api/paystack/webhook",
   },
 } as const;

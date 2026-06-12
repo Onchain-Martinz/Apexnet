@@ -1,0 +1,90 @@
+import { Suspense } from "react";
+import { BookOpen } from "lucide-react";
+import { requireRole } from "@/lib/auth/session";
+import { db } from "@/lib/db";
+import { TextbookCard } from "@/components/textbooks/textbook-card";
+import { DiscoverFilters } from "@/components/textbooks/discover-filters";
+import {
+  buildDiscoverOrderBy,
+  buildDiscoverWhere,
+  parseLevel,
+  parseSort,
+  textbookCardSelect,
+} from "@/lib/textbooks/discover";
+
+// ── Empty state ─────────────────────────────────────────────────────────────
+
+function EmptyResults() {
+  return (
+    <div className="flex flex-col items-center gap-3 rounded-card border border-card-border bg-card px-6 py-12 text-center shadow-card">
+      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
+        <BookOpen className="h-7 w-7 text-muted-foreground" aria-hidden />
+      </div>
+      <p className="text-[15px] font-semibold text-foreground">No textbooks found</p>
+    </div>
+  );
+}
+
+// ── Page ────────────────────────────────────────────────────────────────────
+
+interface DiscoverSearchParams {
+  q?: string;
+  level?: string;
+  department?: string;
+  sort?: string;
+}
+
+export default async function StudentDiscoverPage({
+  searchParams,
+}: {
+  searchParams: Promise<DiscoverSearchParams>;
+}) {
+  await requireRole("STUDENT");
+  const params = await searchParams;
+
+  const q = params.q?.trim() || undefined;
+  const level = parseLevel(params.level ?? null);
+  const departmentId = params.department?.trim() || undefined;
+  const sort = parseSort(params.sort ?? null);
+
+  const [textbooks, departments] = await Promise.all([
+    db.textbook.findMany({
+      where: buildDiscoverWhere({ q, level, departmentId }),
+      orderBy: buildDiscoverOrderBy(sort),
+      select: textbookCardSelect,
+    }),
+    db.department.findMany({
+      where: { textbooks: { some: { status: "PUBLISHED" } } },
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    }),
+  ]);
+
+  return (
+    <div className="px-page pt-12 pb-6 space-y-section max-w-lg mx-auto">
+      <header>
+        <h1 className="text-title font-bold text-foreground">Discover</h1>
+        <p className="mt-1 text-[13px] text-muted-foreground">
+          Browse published textbooks from lecturers across Apex
+        </p>
+      </header>
+
+      <Suspense fallback={null}>
+        <DiscoverFilters departments={departments} />
+      </Suspense>
+
+      {textbooks.length === 0 ? (
+        <EmptyResults />
+      ) : (
+        <div className="grid grid-cols-2 gap-element">
+          {textbooks.map((textbook) => (
+            <TextbookCard
+              key={textbook.id}
+              textbook={{ ...textbook, price: Number(textbook.price) }}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

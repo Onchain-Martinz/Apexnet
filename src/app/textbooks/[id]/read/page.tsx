@@ -5,6 +5,7 @@ import { requireSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { routes } from "@/config/routes";
 import { PdfReader } from "@/components/textbooks/pdf-reader-client";
+import { checkTextbookAccess, grantFreeLibraryAccess } from "@/lib/textbooks/access";
 
 export default async function TextbookReaderPage({
   params,
@@ -21,6 +22,8 @@ export default async function TextbookReaderPage({
       title: true,
       fileKey: true,
       status: true,
+      isFree: true,
+      price: true,
       lecturer: { select: { userId: true } },
     },
   });
@@ -29,9 +32,13 @@ export default async function TextbookReaderPage({
     notFound();
   }
 
-  const isOwner = textbook.lecturer.userId === session.user.id;
-  if (textbook.status !== "PUBLISHED" && !isOwner) {
+  const access = await checkTextbookAccess(textbook, session.user.id);
+  if (!access.allowed) {
     notFound();
+  }
+
+  if (access.isFree && !access.isOwner) {
+    await grantFreeLibraryAccess(textbook.id, session.user.id);
   }
 
   return (

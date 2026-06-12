@@ -1,6 +1,13 @@
-import { requireRole } from "@/lib/auth/session";
 import Link from "next/link";
 import { BookOpen, BookMarked } from "lucide-react";
+import { requireRole } from "@/lib/auth/session";
+import { db } from "@/lib/db";
+import { routes } from "@/config/routes";
+import { TextbookCard, TextbookRow } from "@/components/textbooks/textbook-card";
+import { textbookCardSelect } from "@/lib/textbooks/discover";
+
+const FEATURED_COUNT = 6;
+const RECENT_COUNT = 6;
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -52,24 +59,18 @@ function ActionCard({
 
 // ── Empty state ──────────────────────────────────────────────────────────────
 
-function EmptyActivity() {
+function EmptyCatalogue() {
   return (
     <div className="flex flex-col items-center gap-3 rounded-card border border-card-border bg-card px-6 py-10 text-center shadow-card">
       <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
         <BookOpen className="h-7 w-7 text-muted-foreground" aria-hidden />
       </div>
       <div className="space-y-1">
-        <p className="text-[15px] font-semibold text-foreground">No books yet</p>
+        <p className="text-[15px] font-semibold text-foreground">No textbooks yet</p>
         <p className="text-[13px] text-muted-foreground">
-          Browse available textbooks
+          Published textbooks will appear here
         </p>
       </div>
-      <Link
-        href="/student/discover"
-        className="mt-1 inline-flex h-10 items-center rounded-button bg-primary px-5 text-[13px] font-semibold text-primary-foreground transition-all duration-150 active:scale-[0.97]"
-      >
-        Discover books
-      </Link>
     </div>
   );
 }
@@ -79,6 +80,22 @@ function EmptyActivity() {
 export default async function StudentPage() {
   const session = await requireRole("STUDENT");
   const name = session.user.name;
+
+  const [featured, recentlyAdded] = await Promise.all([
+    db.textbook.findMany({
+      where: { status: "PUBLISHED" },
+      orderBy: { createdAt: "desc" },
+      take: FEATURED_COUNT,
+      select: textbookCardSelect,
+    }),
+    db.textbook.findMany({
+      where: { status: "PUBLISHED" },
+      orderBy: { createdAt: "desc" },
+      skip: FEATURED_COUNT,
+      take: RECENT_COUNT,
+      select: textbookCardSelect,
+    }),
+  ]);
 
   return (
     <div className="px-page pt-12 pb-6 space-y-section max-w-lg mx-auto">
@@ -112,25 +129,53 @@ export default async function StudentPage() {
         </h2>
         <div className="grid grid-cols-2 gap-element">
           <ActionCard
-            href="/student/discover"
+            href={routes.student.discover}
             icon={BookOpen}
             label="Discover Books"
           />
           <ActionCard
-            href="/student/library"
+            href={routes.student.library}
             icon={BookMarked}
             label="My Library"
           />
         </div>
       </section>
 
-      {/* ── Recent activity ───────────────────────── */}
+      {/* ── Featured textbooks ────────────────────── */}
       <section>
         <h2 className="mb-element text-[18px] font-bold text-foreground">
-          Recent Activity
+          Featured Textbooks
         </h2>
-        <EmptyActivity />
+        {featured.length === 0 ? (
+          <EmptyCatalogue />
+        ) : (
+          <div className="grid grid-cols-2 gap-element">
+            {featured.map((textbook) => (
+              <TextbookCard
+                key={textbook.id}
+                textbook={{ ...textbook, price: Number(textbook.price) }}
+              />
+            ))}
+          </div>
+        )}
       </section>
+
+      {/* ── Recently added ─────────────────────────── */}
+      {recentlyAdded.length > 0 && (
+        <section>
+          <h2 className="mb-element text-[18px] font-bold text-foreground">
+            Recently Added
+          </h2>
+          <div className="space-y-element">
+            {recentlyAdded.map((textbook) => (
+              <TextbookRow
+                key={textbook.id}
+                textbook={{ ...textbook, price: Number(textbook.price) }}
+              />
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }
