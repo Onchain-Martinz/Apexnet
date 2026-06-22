@@ -14,9 +14,11 @@ export default async function LecturerProfilePage() {
         select: {
           title: true,
           verified: true,
+          bankCode: true,
           bankName: true,
           bankAccountNumber: true,
           bankAccountName: true,
+          bankAccountVerifiedAt: true,
           university: { select: { name: true } },
           department: { select: { name: true } },
         },
@@ -40,9 +42,13 @@ export default async function LecturerProfilePage() {
           title: profile?.title ?? "",
           university: profile?.university?.name ?? "",
           department: profile?.department?.name ?? "",
+        }}
+        initialBank={{
+          bankCode: profile?.bankCode ?? "",
           bankName: profile?.bankName ?? "",
           bankAccountNumber: profile?.bankAccountNumber ?? "",
           bankAccountName: profile?.bankAccountName ?? "",
+          bankAccountVerifiedAt: profile?.bankAccountVerifiedAt?.toISOString() ?? null,
         }}
       />
     </div>

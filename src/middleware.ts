@@ -9,7 +9,8 @@ const ROLE_HOME: Record<Role, string> = {
 };
 
 const AUTH_PAGES = ["/login", "/signup"];
-const PUBLIC_PAGES = ["/", "/login", "/signup"];
+const PUBLIC_PAGES = ["/", "/login", "/signup", "/forgot-password", "/reset-password", "/admin/setup", "/api/admin/bootstrap"];
+const VERIFY_EMAIL_PAGE = "/verify-email";
 
 export default auth((req) => {
   const { nextUrl } = req;
@@ -33,6 +34,17 @@ export default auth((req) => {
     // Preserve the intended destination so we can redirect back after login
     loginUrl.searchParams.set("callbackUrl", nextUrl.pathname);
     return NextResponse.redirect(loginUrl);
+  }
+
+  // Unverified user → hard-gate to /verify-email until they verify their email
+  if (isLoggedIn && !session?.user?.emailVerifiedAt && path !== VERIFY_EMAIL_PAGE) {
+    return NextResponse.redirect(new URL(VERIFY_EMAIL_PAGE, req.url));
+  }
+
+  // Verified user hitting /verify-email → send to their dashboard
+  if (isLoggedIn && session?.user?.emailVerifiedAt && path === VERIFY_EMAIL_PAGE) {
+    const home = role ? ROLE_HOME[role] : "/student";
+    return NextResponse.redirect(new URL(home, req.url));
   }
 
   // Authenticated user hitting the wrong role's section → send to their home

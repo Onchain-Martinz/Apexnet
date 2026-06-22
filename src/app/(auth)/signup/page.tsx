@@ -18,10 +18,6 @@ type FieldErrors = {
   confirmPassword?: string;
 };
 
-const ROLE_HOME: Record<Role, string> = {
-  STUDENT: "/student",
-  LECTURER: "/lecturer",
-};
 
 export default function SignupPage() {
   const router = useRouter();
@@ -88,8 +84,8 @@ export default function SignupPage() {
         return;
       }
 
-      // 3. Redirect to role home
-      router.push(ROLE_HOME[role]);
+      // 3. New accounts are unverified — send them to /verify-email
+      router.push("/verify-email");
       router.refresh();
     } catch {
       setGlobalError("Something went wrong. Please try again.");

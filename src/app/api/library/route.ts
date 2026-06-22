@@ -13,11 +13,11 @@ export async function GET() {
   }
 
   const entries = await db.studentLibrary.findMany({
-    where: { studentId: session.user.id },
+    where: { studentId: session.user.id, textbook: { status: "PUBLISHED" } },
     orderBy: { addedAt: "desc" },
     select: {
       addedAt: true,
-      textbook: { select: { ...textbookCardSelect, fileKey: true } },
+      textbook: { select: textbookCardSelect },
     },
   });
 

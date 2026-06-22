@@ -3,10 +3,13 @@ import { db } from "@/lib/db";
 
 // ── Reader access control ───────────────────────────────────────────────────
 // Shared by /textbooks/[id]/read and /api/books/[id]/file so both gates stay
-// in sync. A user may read a textbook's file if:
-//   1. They are the uploading lecturer (any status), OR
-//   2. The textbook is PUBLISHED and free, OR
-//   3. The textbook is PUBLISHED and they own a StudentLibrary entry for it.
+// in sync. Evaluation order matters:
+//   1. ADMIN   → allow (any status, no purchase required)
+//   2. Owner   → allow (any status — lecturer can always read their own work)
+//   3. Has StudentLibrary entry → allow (purchase retained even if archived)
+//   4. Not PUBLISHED → deny (content is draft/archived and caller isn't entitled)
+//   5. Free + PUBLISHED → allow (auto-granted on read, see grantFreeLibraryAccess)
+//   6. Otherwise → deny
 
 export interface AccessTextbook {
   id: string;
@@ -25,32 +28,48 @@ export interface AccessResult {
 export async function checkTextbookAccess(
   textbook: AccessTextbook,
   userId: string,
+  userRole: string,
 ): Promise<AccessResult> {
   const isOwner = textbook.lecturer.userId === userId;
   const isFree = textbook.isFree || Number(textbook.price) === 0;
 
+  // Rule 1 — Admins have unrestricted read access for content moderation.
+  if (userRole === "ADMIN") {
+    return { allowed: true, isOwner, isFree };
+  }
+
+  // Rule 2 — Lecturer-owner can always read their own work regardless of status.
   if (isOwner) {
-    return { allowed: true, isOwner, isFree };
+    return { allowed: true, isOwner: true, isFree };
   }
 
-  if (textbook.status !== "PUBLISHED") {
-    return { allowed: false, isOwner, isFree };
-  }
-
-  if (isFree) {
-    return { allowed: true, isOwner, isFree };
-  }
-
-  const owns = await db.studentLibrary.findUnique({
+  // Rule 3 — Check StudentLibrary BEFORE the status gate.
+  // Purchasers retain access even if the textbook is later archived.
+  const owned = await db.studentLibrary.findUnique({
     where: { studentId_textbookId: { studentId: userId, textbookId: textbook.id } },
     select: { id: true },
   });
+  if (owned) {
+    return { allowed: true, isOwner: false, isFree };
+  }
 
-  return { allowed: !!owns, isOwner, isFree };
+  // Rule 4 — Non-owners with no library entry cannot access unpublished content.
+  if (textbook.status !== "PUBLISHED") {
+    return { allowed: false, isOwner: false, isFree };
+  }
+
+  // Rule 5 — Any authenticated user may read a free published textbook.
+  // The caller must call grantFreeLibraryAccess() after this to record the access.
+  if (isFree) {
+    return { allowed: true, isOwner: false, isFree: true };
+  }
+
+  // Rule 6 — Paid published textbook, no library entry → deny.
+  return { allowed: false, isOwner: false, isFree };
 }
 
-// Adds a free, PUBLISHED textbook to a user's library on first access
-// (purchaseId: null — no associated Purchase). Safe to call repeatedly.
+// Adds a free, PUBLISHED textbook to a user's library on first read
+// (purchaseId: null — no associated Purchase). Idempotent: safe to call repeatedly.
 export async function grantFreeLibraryAccess(textbookId: string, studentId: string) {
   await db.studentLibrary.upsert({
     where: { studentId_textbookId: { studentId, textbookId } },

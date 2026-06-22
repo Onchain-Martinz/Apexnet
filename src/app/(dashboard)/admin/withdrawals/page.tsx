@@ -2,6 +2,7 @@ import { requireRole } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { Wallet } from "lucide-react";
 import { WithdrawalActions } from "@/components/admin/withdrawal-actions";
+import { WithdrawalRetryButton } from "@/components/admin/withdrawal-retry-button";
 import type { WithdrawalStatus } from "@prisma/client";
 
 const naira = (amount: number) => `₦${amount.toLocaleString("en-NG")}`;
@@ -12,11 +13,17 @@ function StatusBadge({ status }: { status: WithdrawalStatus }) {
   const styles: Record<WithdrawalStatus, string> = {
     PENDING: "bg-muted text-muted-foreground border border-border",
     APPROVED: "bg-success/10 text-success border border-success/30",
+    PROCESSING: "bg-primary/10 text-primary border border-primary/30",
+    PAID: "bg-success/10 text-success border border-success/30",
+    FAILED: "bg-destructive/10 text-destructive border border-destructive/30",
     REJECTED: "bg-destructive/10 text-destructive border border-destructive/30",
   };
   const labels: Record<WithdrawalStatus, string> = {
     PENDING: "Pending",
     APPROVED: "Approved",
+    PROCESSING: "Processing",
+    PAID: "Paid",
+    FAILED: "Failed",
     REJECTED: "Rejected",
   };
 
@@ -57,6 +64,7 @@ export default async function AdminWithdrawalsPage() {
   await requireRole("ADMIN");
 
   const withdrawals = await db.withdrawalRequest.findMany({
+    take: 200,
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
@@ -64,6 +72,8 @@ export default async function AdminWithdrawalsPage() {
       status: true,
       createdAt: true,
       reviewedAt: true,
+      failureReason: true,
+      retryCount: true,
       lecturer: {
         select: {
           user: { select: { name: true, email: true } },
@@ -118,6 +128,17 @@ export default async function AdminWithdrawalsPage() {
                 </div>
               </div>
               {w.status === "PENDING" && <WithdrawalActions id={w.id} />}
+              {w.status === "FAILED" && (
+                <div className="space-y-2">
+                  {w.failureReason && (
+                    <p className="text-[12px] text-destructive">
+                      {w.failureReason}
+                      {w.retryCount > 0 ? ` (attempt ${w.retryCount + 1})` : ""}
+                    </p>
+                  )}
+                  <WithdrawalRetryButton id={w.id} />
+                </div>
+              )}
             </div>
           ))}
         </div>

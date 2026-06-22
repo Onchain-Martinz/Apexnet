@@ -1,12 +1,23 @@
 import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { initializeTransaction, nairaToKobo } from "@/lib/paystack";
+import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from "@/lib/rate-limit";
+import { captureException } from "@/lib/monitoring";
 
 // ── POST /api/purchases/initialize ──────────────────────────────────────────
-// Starts a Paystack checkout for a paid, published textbook.
-// Body: { textbookId: string }
+// Finds or creates a PENDING purchase row and returns the data needed by the
+// client-side Flutterwave Inline SDK to open the payment modal.
+//
+// Response: { txRef, amount, email }
+// The SDK handles the checkout UI; server-side Flutterwave calls are only
+// needed at verification time (GET /v3/transactions/:id/verify via V4 OAuth).
+//
+// Idempotency:
+//  - A partial unique index on (studentId, textbookId) WHERE status='PENDING'
+//    ensures only one PENDING purchase per (student, textbook) pair at a time.
+//  - Concurrent creates race; the loser gets P2002 and reads the winner's row.
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -15,6 +26,14 @@ export async function POST(req: NextRequest) {
   }
   if (session.user.role !== "STUDENT") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const rateLimit = checkRateLimit(
+    `purchase-init:${session.user.id}`,
+    RATE_LIMITS.PURCHASE_INITIALIZE,
+  );
+  if (!rateLimit.allowed) {
+    return rateLimitResponse(rateLimit);
   }
 
   let body: unknown;
@@ -51,57 +70,51 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "You already own this textbook" }, { status: 422 });
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  // ── Find-or-create the PENDING purchase ─────────────────────────────────
+  let purchase: { id: string; paymentReference: string };
 
-  // Reuse an existing in-flight purchase attempt instead of creating a second one.
   const existingPending = await db.purchase.findFirst({
     where: { studentId: session.user.id, textbookId, status: "PENDING" },
-    select: { id: true, paystackReference: true, paystackAccessCode: true },
+    select: { id: true, paymentReference: true },
   });
 
-  if (existingPending?.paystackAccessCode) {
-    return NextResponse.json({
-      authorizationUrl: `https://checkout.paystack.com/${existingPending.paystackAccessCode}`,
-      reference: existingPending.paystackReference,
-    });
-  }
-
-  const purchase = existingPending
-    ? existingPending
-    : await db.purchase.create({
+  if (existingPending) {
+    purchase = existingPending;
+  } else {
+    try {
+      purchase = await db.purchase.create({
         data: {
           studentId: session.user.id,
           textbookId,
           amount: textbook.price,
-          paystackReference: `APX_${randomUUID()}`,
+          paymentReference: `APX_${randomUUID()}`,
           status: "PENDING",
         },
-        select: { id: true, paystackReference: true, paystackAccessCode: true },
+        select: { id: true, paymentReference: true },
       });
-
-  const reference = purchase.paystackReference;
-
-  try {
-    const transaction = await initializeTransaction({
-      email: session.user.email,
-      amountKobo: nairaToKobo(price),
-      reference,
-      callbackUrl: `${appUrl}/student/purchases/callback`,
-      metadata: { textbookId, studentId: session.user.id, purchaseId: purchase.id },
-    });
-
-    await db.purchase.update({
-      where: { id: purchase.id },
-      data: { paystackAccessCode: transaction.accessCode },
-    });
-
-    return NextResponse.json({
-      authorizationUrl: transaction.authorizationUrl,
-      reference,
-    });
-  } catch (error) {
-    await db.purchase.update({ where: { id: purchase.id }, data: { status: "FAILED" } });
-    const message = error instanceof Error ? error.message : "Failed to start checkout";
-    return NextResponse.json({ error: message }, { status: 502 });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+        const winner = await db.purchase.findFirst({
+          where: { studentId: session.user.id, textbookId, status: "PENDING" },
+          select: { id: true, paymentReference: true },
+        });
+        if (!winner) {
+          captureException(new Error("P2002 race but no PENDING row found"), {
+            userId: session.user.id,
+            textbookId,
+          });
+          return NextResponse.json({ error: "Failed to start checkout" }, { status: 502 });
+        }
+        purchase = winner;
+      } else {
+        throw error;
+      }
+    }
   }
+
+  return NextResponse.json({
+    txRef: purchase.paymentReference,
+    amount: price,
+    email: session.user.email,
+  });
 }

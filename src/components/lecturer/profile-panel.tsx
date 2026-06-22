@@ -1,18 +1,17 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import Link from "next/link";
+import { signOut } from "next-auth/react";
+import { Check, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { VerificationBadge } from "@/components/ui/verification-badge";
-import { SignOutButton } from "@/components/auth/sign-out-button";
+import { BankVerificationPanel, type BankVerificationData } from "@/components/lecturer/bank-verification-panel";
 
 type ProfileData = {
   title: string;
   university: string;
   department: string;
-  bankName: string;
-  bankAccountNumber: string;
-  bankAccountName: string;
 };
 
 // ── Read-only field row ──────────────────────────────────────────────────────
@@ -31,11 +30,13 @@ export function ProfilePanel({
   email,
   verified,
   initial,
+  initialBank,
 }: {
   name: string;
   email: string;
   verified: boolean;
   initial: ProfileData;
+  initialBank: BankVerificationData;
 }) {
   const [mode, setMode] = useState<"view" | "edit">("view");
   const [saved, setSaved] = useState<ProfileData>(initial);
@@ -75,9 +76,6 @@ export function ProfilePanel({
           title: draft.title,
           universityName: draft.university,
           departmentName: draft.department,
-          bankName: draft.bankName,
-          bankAccountNumber: draft.bankAccountNumber,
-          bankAccountName: draft.bankAccountName,
         }),
       });
 
@@ -92,9 +90,6 @@ export function ProfilePanel({
         title: data.profile.title ?? "",
         university: data.profile.university?.name ?? "",
         department: data.profile.department?.name ?? "",
-        bankName: data.profile.bankName ?? "",
-        bankAccountNumber: data.profile.bankAccountNumber ?? "",
-        bankAccountName: data.profile.bankAccountName ?? "",
       };
 
       setSaved(updated);
@@ -139,37 +134,6 @@ export function ProfilePanel({
           disabled={saving}
         />
 
-        <hr className="border-card-border" />
-
-        <h2 className="text-[15px] font-semibold text-foreground">Bank Information</h2>
-
-        <Input
-          label="Account Name"
-          id="bankAccountName"
-          placeholder="e.g. Jane Doe"
-          value={draft.bankAccountName}
-          onChange={(e) => setField("bankAccountName", e.target.value)}
-          disabled={saving}
-        />
-
-        <Input
-          label="Account Number"
-          id="bankAccountNumber"
-          placeholder="e.g. 0123456789"
-          value={draft.bankAccountNumber}
-          onChange={(e) => setField("bankAccountNumber", e.target.value)}
-          disabled={saving}
-        />
-
-        <Input
-          label="Bank Name"
-          id="bankName"
-          placeholder="e.g. GTBank"
-          value={draft.bankName}
-          onChange={(e) => setField("bankName", e.target.value)}
-          disabled={saving}
-        />
-
         {error && (
           <div className="rounded-input border border-destructive/30 bg-destructive/5 px-4 py-3">
             <p className="text-[13px] text-destructive">{error}</p>
@@ -204,6 +168,7 @@ export function ProfilePanel({
         </div>
       )}
 
+      {/* ── Identity card ── */}
       <section className="space-y-element rounded-card border border-card-border bg-card p-card shadow-card">
         <InfoRow label="Name" value={name} />
         <InfoRow label="Email" value={email} />
@@ -212,29 +177,63 @@ export function ProfilePanel({
         <InfoRow label="Department" value={saved.department} />
       </section>
 
-      <section className="flex items-center gap-2 rounded-card border border-card-border bg-card p-card shadow-card">
+      {/* ── Verification Status card ── */}
+      <section className="rounded-card border border-card-border bg-card p-card shadow-card">
+        <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.09em] text-muted-foreground">
+          Verification Status
+        </p>
         {verified ? (
-          <>
-            <VerificationBadge />
-            <p className="text-[15px] font-semibold text-foreground">Verified Lecturer</p>
-          </>
+          <div className="flex items-start gap-3">
+            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-success/10">
+              <Check className="h-4 w-4 text-success" strokeWidth={3} aria-hidden />
+            </div>
+            <div>
+              <p className="text-[15px] font-semibold text-foreground">Verified Lecturer</p>
+              <p className="mt-0.5 text-[13px] leading-relaxed text-muted-foreground">
+                Your account is approved to publish textbooks.
+              </p>
+            </div>
+          </div>
         ) : (
-          <p className="text-[15px] font-semibold text-muted-foreground">Not Verified</p>
+          <p className="text-[15px] font-medium text-muted-foreground">
+            Not yet verified — contact Apex support if you believe this is an error.
+          </p>
         )}
       </section>
 
-      <section className="space-y-element rounded-card border border-card-border bg-card p-card shadow-card">
-        <InfoRow label="Account Name" value={saved.bankAccountName} />
-        <InfoRow label="Account Number" value={saved.bankAccountNumber} />
-        <InfoRow label="Bank Name" value={saved.bankName} />
+      {/* ── Withdrawal Account ── */}
+      <BankVerificationPanel initial={initialBank} />
+
+      {/* ── Security card ── */}
+      <section className="overflow-hidden rounded-card border border-card-border bg-card shadow-card">
+        <div className="px-5 pt-5 pb-3">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.09em] text-muted-foreground">
+            Security
+          </p>
+        </div>
+
+        <Link
+          href="/forgot-password"
+          className="flex items-center justify-between border-t border-card-border px-5 py-4 transition-colors active:bg-muted"
+        >
+          <p className="text-[15px] font-medium text-foreground">Change Password</p>
+          <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden />
+        </Link>
+
+        <button
+          type="button"
+          onClick={() => signOut({ callbackUrl: "/login" })}
+          className="flex w-full items-center justify-between border-t border-card-border px-5 py-4 text-left transition-colors active:bg-muted"
+        >
+          <p className="text-[15px] font-medium text-destructive">Sign Out</p>
+          <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden />
+        </button>
       </section>
 
-      <div className="flex gap-element">
-        <Button size="lg" className="flex-1" onClick={startEdit}>
-          Edit Profile
-        </Button>
-        <SignOutButton size="lg" className="flex-1" />
-      </div>
+      {/* ── Edit Profile ── */}
+      <Button size="lg" className="w-full" onClick={startEdit}>
+        Edit Profile
+      </Button>
     </div>
   );
 }

@@ -7,6 +7,8 @@ export const routes = {
   login: "/login",
   signup: "/signup",
   forgotPassword: "/forgot-password",
+  resetPassword: "/reset-password",
+  verifyEmail: "/verify-email",
 
   // Shared
   textbook: (id: string) => `/textbooks/${id}`,
@@ -42,13 +44,20 @@ export const routes = {
     content: "/admin/content",
     settings: "/admin/settings",
     withdrawals: "/admin/withdrawals",
+    revenue: "/admin/revenue",
+    lecturers: "/admin/lecturers",
+    newLecturer: "/admin/lecturers/new",
+    students: "/admin/students",
+    student: (id: string) => `/admin/students/${id}`,
+    textbooks: "/admin/textbooks",
+    setup: "/admin/setup",
+    profile: "/admin/profile",
   },
 
   // API
   api: {
     auth: "/api/auth",
     books: "/api/books",
-    courses: "/api/courses",
     users: "/api/users",
     textbooks: "/api/textbooks",
     library: "/api/library",
@@ -56,6 +65,17 @@ export const routes = {
       initialize: "/api/purchases/initialize",
       verify: "/api/purchases/verify",
     },
-    paystackWebhook: "/api/paystack/webhook",
+    flutterwaveWebhook: "/api/flutterwave/webhook",
+    readingProgress: "/api/reading-progress",
+    admin: {
+      lecturers: "/api/admin/lecturers",
+      lecturerVerify: (id: string) => `/api/admin/lecturers/${id}/verify`,
+      userStatus: (id: string) => `/api/admin/users/${id}/status`,
+      textbookStatus: (id: string) => `/api/admin/textbooks/${id}/status`,
+      impersonate: "/api/admin/impersonate",
+      returnToAdmin: "/api/admin/return",
+      bootstrap: "/api/admin/bootstrap",
+      profile: "/api/admin/profile",
+    },
   },
 } as const;

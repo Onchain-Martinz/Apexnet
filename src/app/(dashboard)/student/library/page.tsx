@@ -1,8 +1,7 @@
 import { BookOpen } from "lucide-react";
 import { requireRole } from "@/lib/auth/session";
 import { db } from "@/lib/db";
-import { TextbookCard } from "@/components/textbooks/textbook-card";
-import { textbookCardSelect } from "@/lib/textbooks/discover";
+import { LibraryBookCard } from "@/components/textbooks/library-book-card";
 
 // ── Empty state ─────────────────────────────────────────────────────────────
 
@@ -28,15 +27,28 @@ export default async function StudentLibraryPage() {
   const session = await requireRole("STUDENT");
 
   const entries = await db.studentLibrary.findMany({
-    where: { studentId: session.user.id },
+    where: { studentId: session.user.id, textbook: { status: "PUBLISHED" } },
     orderBy: { addedAt: "desc" },
+    take: 100,
     select: {
-      textbook: { select: textbookCardSelect },
+      textbook: { select: { id: true, title: true, coverImageKey: true } },
     },
   });
 
+  const progressRows = entries.length
+    ? await db.readingProgress.findMany({
+        where: {
+          studentId: session.user.id,
+          textbookId: { in: entries.map(({ textbook }) => textbook.id) },
+        },
+        select: { textbookId: true, currentPage: true, totalPages: true, percentage: true, lastReadAt: true },
+      })
+    : [];
+
+  const progressByTextbookId = new Map(progressRows.map((row) => [row.textbookId, row]));
+
   return (
-    <div className="px-page pt-12 pb-6 space-y-section max-w-lg mx-auto">
+    <div className="px-page pt-12 pb-10 space-y-10 max-w-2xl mx-auto">
       <header>
         <h1 className="text-title font-bold text-foreground">Library</h1>
       </header>
@@ -44,11 +56,12 @@ export default async function StudentLibraryPage() {
       {entries.length === 0 ? (
         <EmptyLibrary />
       ) : (
-        <div className="grid grid-cols-2 gap-element">
+        <div className="space-y-4">
           {entries.map(({ textbook }) => (
-            <TextbookCard
+            <LibraryBookCard
               key={textbook.id}
-              textbook={{ ...textbook, price: Number(textbook.price) }}
+              textbook={textbook}
+              progress={progressByTextbookId.get(textbook.id) ?? null}
             />
           ))}
         </div>

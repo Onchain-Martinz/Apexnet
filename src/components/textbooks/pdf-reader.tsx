@@ -30,11 +30,13 @@ const DEFAULT_ASPECT_RATIO = 1.414;
 
 interface PdfReaderProps {
   fileUrl: string;
+  initialPage?: number;
+  onProgressChange?: (page: number, numPages: number) => void;
 }
 
-export function PdfReader({ fileUrl }: PdfReaderProps) {
+export function PdfReader({ fileUrl, initialPage, onProgressChange }: PdfReaderProps) {
   const [numPages, setNumPages] = useState<number | null>(null);
-  const [pageNumber, setPageNumber] = useState(1);
+  const [pageNumber, setPageNumber] = useState(initialPage && initialPage > 0 ? initialPage : 1);
   const [scale, setScale] = useState(1);
   const [pdfDoc, setPdfDoc] = useState<PDFDocumentProxy | null>(null);
   const [containerWidth, setContainerWidth] = useState(0);
@@ -44,6 +46,7 @@ export function PdfReader({ fileUrl }: PdfReaderProps) {
   const pageRefs = useRef<Map<number, HTMLDivElement>>(new Map());
   const observerRef = useRef<IntersectionObserver | null>(null);
   const visibilityRef = useRef<Map<number, number>>(new Map());
+  const didRestoreScrollRef = useRef(false);
 
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -52,11 +55,15 @@ export function PdfReader({ fileUrl }: PdfReaderProps) {
   const [searchIndex, setSearchIndex] = useState(0);
   const [searching, setSearching] = useState(false);
 
-  const onDocumentLoadSuccess = useCallback((pdf: PDFDocumentProxy) => {
-    setNumPages(pdf.numPages);
-    setPdfDoc(pdf);
-    setPageNumber(1);
-  }, []);
+  const onDocumentLoadSuccess = useCallback(
+    (pdf: PDFDocumentProxy) => {
+      setNumPages(pdf.numPages);
+      setPdfDoc(pdf);
+      const target = initialPage && initialPage >= 1 && initialPage <= pdf.numPages ? initialPage : 1;
+      setPageNumber(target);
+    },
+    [initialPage],
+  );
 
   const handlePageLoadSuccess = useCallback((page: PDFPageProxy) => {
     const viewport = page.getViewport({ scale: 1 });
@@ -132,6 +139,27 @@ export function PdfReader({ fileUrl }: PdfReaderProps) {
       visibilityRef.current.delete(page);
     }
   }, []);
+
+  // ── Restore scroll position to the initial page once, after layout ──────
+  useEffect(() => {
+    if (didRestoreScrollRef.current) return;
+    if (!numPages || containerWidth === 0) return;
+
+    const target = initialPage && initialPage >= 1 && initialPage <= numPages ? initialPage : 1;
+    didRestoreScrollRef.current = true;
+    if (target <= 1) return;
+
+    const raf = requestAnimationFrame(() => {
+      pageRefs.current.get(target)?.scrollIntoView({ behavior: "auto", block: "start" });
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [numPages, containerWidth, initialPage]);
+
+  // ── Report live page/percentage to parent for header + progress saving ──
+  useEffect(() => {
+    if (!numPages) return;
+    onProgressChange?.(pageNumber, numPages);
+  }, [pageNumber, numPages, onProgressChange]);
 
   const goToPage = useCallback(
     (page: number) => {

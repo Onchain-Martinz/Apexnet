@@ -4,6 +4,8 @@ import { ChevronLeft, Receipt } from "lucide-react";
 import { requireRole } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { routes } from "@/config/routes";
+import { LECTURER_SHARE_RATE } from "@/lib/constants";
+import { roundCurrency } from "@/lib/utils/format";
 
 const naira = (amount: number) => `₦${amount.toLocaleString("en-NG")}`;
 
@@ -69,7 +71,9 @@ export default async function TextbookSalesPage({
     notFound();
   }
 
-  const totalRevenue = textbook.purchases.reduce((sum, p) => sum + Number(p.amount), 0);
+  const totalEarnings = roundCurrency(
+    textbook.purchases.reduce((sum, p) => sum + Number(p.amount), 0) * LECTURER_SHARE_RATE,
+  );
 
   return (
     <div className="px-page pt-12 pb-6 space-y-section max-w-lg mx-auto">
@@ -87,13 +91,13 @@ export default async function TextbookSalesPage({
         </div>
       </header>
 
-      {/* ── Revenue summary ─────────────────────────── */}
+      {/* ── Earnings summary ─────────────────────────── */}
       <section className="grid grid-cols-2 gap-element">
         <div className="rounded-card border border-card-border bg-card p-card shadow-card">
           <p className="text-[22px] font-bold leading-none text-foreground">
-            {naira(totalRevenue)}
+            {naira(totalEarnings)}
           </p>
-          <p className="mt-1 text-[13px] text-muted-foreground">Total Revenue</p>
+          <p className="mt-1 text-[13px] text-muted-foreground">Your Earnings</p>
         </div>
         <div className="rounded-card border border-card-border bg-card p-card shadow-card">
           <p className="text-[22px] font-bold leading-none text-foreground">
@@ -133,7 +137,7 @@ export default async function TextbookSalesPage({
                   </p>
                 </div>
                 <p className="flex-shrink-0 text-[15px] font-semibold text-foreground">
-                  {naira(Number(p.amount))}
+                  {naira(roundCurrency(Number(p.amount) * LECTURER_SHARE_RATE))}
                 </p>
               </div>
             ))}

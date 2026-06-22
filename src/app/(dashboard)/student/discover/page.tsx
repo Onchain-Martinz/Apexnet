@@ -61,11 +61,11 @@ export default async function StudentDiscoverPage({
   ]);
 
   return (
-    <div className="px-page pt-12 pb-6 space-y-section max-w-lg mx-auto">
+    <div className="px-page pt-12 pb-10 space-y-10 max-w-2xl mx-auto">
       <header>
-        <h1 className="text-title font-bold text-foreground">Discover</h1>
-        <p className="mt-1 text-[13px] text-muted-foreground">
-          Browse published textbooks from lecturers across Apex
+        <h1 className="text-title font-bold text-foreground">D-Library</h1>
+        <p className="mt-1.5 text-[13px] text-muted-foreground">
+          Browse every textbook on Apexnet
         </p>
       </header>
 
@@ -76,7 +76,7 @@ export default async function StudentDiscoverPage({
       {textbooks.length === 0 ? (
         <EmptyResults />
       ) : (
-        <div className="grid grid-cols-2 gap-element">
+        <div className="grid grid-cols-2 gap-x-6 gap-y-10 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
           {textbooks.map((textbook) => (
             <TextbookCard
               key={textbook.id}

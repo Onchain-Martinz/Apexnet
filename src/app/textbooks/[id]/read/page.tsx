@@ -4,7 +4,7 @@ import { ChevronLeft } from "lucide-react";
 import { requireSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { routes } from "@/config/routes";
-import { PdfReader } from "@/components/textbooks/pdf-reader-client";
+import { ReaderView } from "@/components/textbooks/reader-view";
 import { checkTextbookAccess, grantFreeLibraryAccess } from "@/lib/textbooks/access";
 
 export default async function TextbookReaderPage({
@@ -32,7 +32,7 @@ export default async function TextbookReaderPage({
     notFound();
   }
 
-  const access = await checkTextbookAccess(textbook, session.user.id);
+  const access = await checkTextbookAccess(textbook, session.user.id, session.user.role);
   if (!access.allowed) {
     notFound();
   }
@@ -40,6 +40,16 @@ export default async function TextbookReaderPage({
   if (access.isFree && !access.isOwner) {
     await grantFreeLibraryAccess(textbook.id, session.user.id);
   }
+
+  const progress = await db.readingProgress.findUnique({
+    where: {
+      studentId_textbookId: {
+        studentId: session.user.id,
+        textbookId: textbook.id,
+      },
+    },
+    select: { currentPage: true, totalPages: true },
+  });
 
   return (
     <div className="flex h-dvh flex-col">
@@ -57,7 +67,12 @@ export default async function TextbookReaderPage({
       </header>
 
       <div className="flex-1 overflow-hidden">
-        <PdfReader fileUrl={`/api/books/${textbook.id}/file`} />
+        <ReaderView
+          textbookId={textbook.id}
+          fileUrl={`/api/books/${textbook.id}/file`}
+          initialPage={progress?.currentPage && progress.currentPage > 0 ? progress.currentPage : 1}
+          initialTotalPages={progress?.totalPages ?? null}
+        />
       </div>
     </div>
   );

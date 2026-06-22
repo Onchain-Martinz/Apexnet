@@ -3,7 +3,7 @@
 import { useState, useRef, type ChangeEvent, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, FileText, Upload, X } from "lucide-react";
+import { ChevronLeft, FileText, Upload, X, ImagePlus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { routes } from "@/config/routes";
@@ -20,6 +20,8 @@ const LEVELS = [
 ];
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
+const MAX_COVER_SIZE = 5 * 1024 * 1024; // 5 MB
+const COVER_ACCEPT = ["image/jpeg", "image/png", "image/webp"];
 
 // ── Field helpers ───────────────────────────────────────────────────────────
 
@@ -137,6 +139,109 @@ function PdfDropZone({
   );
 }
 
+// ── Cover image drop zone ────────────────────────────────────────────────────
+
+function CoverDropZone({
+  preview,
+  error,
+  onFileChange,
+  onClear,
+}: {
+  preview: string | null;
+  error?: string;
+  onFileChange: (f: File) => void;
+  onClear: () => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [dragging, setDragging] = useState(false);
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setDragging(false);
+    const dropped = e.dataTransfer.files[0];
+    if (dropped) onFileChange(dropped);
+  }
+
+  function handleChange(e: ChangeEvent<HTMLInputElement>) {
+    const picked = e.target.files?.[0];
+    if (picked) onFileChange(picked);
+    e.target.value = "";
+  }
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <Label htmlFor="cover-input">
+        Book Cover{" "}
+        <span className="font-normal text-muted-foreground">(optional)</span>
+      </Label>
+
+      {preview ? (
+        <div className="flex items-end gap-4">
+          <div className="relative w-[100px] flex-shrink-0">
+            <div className="overflow-hidden rounded-[16px] bg-muted" style={{ aspectRatio: "3/4" }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={preview} alt="Cover preview" className="h-full w-full object-cover" />
+            </div>
+            <button
+              type="button"
+              onClick={onClear}
+              className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full border border-border bg-white shadow-sm transition-colors hover:bg-muted"
+              aria-label="Remove cover"
+            >
+              <X className="h-3.5 w-3.5 text-foreground" aria-hidden />
+            </button>
+          </div>
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            className="mb-1 text-[13px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+          >
+            Replace image
+          </button>
+        </div>
+      ) : (
+        <>
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={handleDrop}
+            className={cn(
+              "flex flex-col items-center gap-2 rounded-input border-2 border-dashed px-6 py-8",
+              "transition-all duration-150",
+              dragging
+                ? "border-foreground bg-muted/40"
+                : error
+                ? "border-destructive bg-destructive/5"
+                : "border-border bg-background",
+            )}
+          >
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted">
+              <ImagePlus className="h-5 w-5 text-muted-foreground" aria-hidden />
+            </span>
+            <div className="text-center">
+              <p className="text-[14px] font-medium text-foreground">Upload cover image</p>
+              <p className="text-[12px] text-muted-foreground">JPG, PNG, WEBP · max 5 MB</p>
+            </div>
+          </button>
+          <p className="text-[11px] text-muted-foreground">Recommended: 1200 × 1600 px</p>
+        </>
+      )}
+
+      <input
+        ref={inputRef}
+        id="cover-input"
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="sr-only"
+        onChange={handleChange}
+      />
+      <FieldError message={error} />
+    </div>
+  );
+}
+
 // ── Select field ─────────────────────────────────────────────────────────────
 
 function SelectField({
@@ -193,16 +298,18 @@ type Fields = {
   description: string;
   department: string;
   level: string;
+  courseCode: string;
   price: string;
 };
 
-type Errors = Partial<Record<keyof Fields | "pdf" | "form", string>>;
+type Errors = Partial<Record<keyof Fields | "pdf" | "cover" | "form", string>>;
 
 function validate(fields: Fields, pdfFile: File | null): Errors {
   const errs: Errors = {};
 
   if (!fields.title.trim()) errs.title = "Title is required";
   if (!fields.description.trim()) errs.description = "Description is required";
+  if (!fields.courseCode.trim()) errs.courseCode = "Course code is required";
   if (!fields.department.trim()) errs.department = "Department is required";
   if (!fields.level) errs.level = "Level is required";
 
@@ -234,9 +341,12 @@ export default function NewTextbookPage() {
     description: "",
     department: "",
     level: "",
+    courseCode: "",
     price: "",
   });
   const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [errors, setErrors] = useState<Errors>({});
   const [submitting, setSubmitting] = useState(false);
 
@@ -249,6 +359,28 @@ export default function NewTextbookPage() {
   function handlePdfChange(file: File) {
     setPdfFile(file);
     if (errors.pdf) setErrors((prev) => ({ ...prev, pdf: undefined }));
+  }
+
+  function handleCoverChange(file: File) {
+    if (!COVER_ACCEPT.includes(file.type)) {
+      setErrors((prev) => ({ ...prev, cover: "Cover must be JPG, PNG, or WEBP" }));
+      return;
+    }
+    if (file.size > MAX_COVER_SIZE) {
+      setErrors((prev) => ({ ...prev, cover: "Cover must be under 5 MB" }));
+      return;
+    }
+    setCoverFile(file);
+    setErrors((prev) => ({ ...prev, cover: undefined }));
+    const reader = new FileReader();
+    reader.onload = (e) => setCoverPreview(e.target?.result as string);
+    reader.readAsDataURL(file);
+  }
+
+  function handleCoverClear() {
+    setCoverFile(null);
+    setCoverPreview(null);
+    setErrors((prev) => ({ ...prev, cover: undefined }));
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -266,10 +398,12 @@ export default function NewTextbookPage() {
     const body = new FormData();
     body.append("title", fields.title.trim());
     body.append("description", fields.description.trim());
+    body.append("courseCode", fields.courseCode.trim());
     body.append("department", fields.department.trim());
     body.append("level", fields.level);
     body.append("price", fields.price);
     body.append("pdf", pdfFile!);
+    if (coverFile) body.append("cover", coverFile);
 
     try {
       const res = await fetch("/api/books", { method: "POST", body });
@@ -346,9 +480,19 @@ export default function NewTextbookPage() {
         </div>
 
         <Input
+          label="Course Code"
+          id="courseCode"
+          placeholder="e.g. PSY202"
+          value={fields.courseCode}
+          onChange={(e) => setField("courseCode", e.target.value)}
+          error={errors.courseCode}
+          disabled={submitting}
+        />
+
+        <Input
           label="Department"
           id="department"
-          placeholder="e.g. Computer Science"
+          placeholder="e.g. Psychology"
           value={fields.department}
           onChange={(e) => setField("department", e.target.value)}
           error={errors.department}
@@ -377,6 +521,13 @@ export default function NewTextbookPage() {
           onChange={(e) => setField("price", e.target.value)}
           error={errors.price}
           disabled={submitting}
+        />
+
+        <CoverDropZone
+          preview={coverPreview}
+          error={errors.cover}
+          onFileChange={handleCoverChange}
+          onClear={handleCoverClear}
         />
 
         <PdfDropZone

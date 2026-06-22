@@ -7,24 +7,31 @@ import { routes } from "@/config/routes";
 import { completePurchaseByReference } from "@/lib/purchases/complete";
 
 // ── Purchase callback ────────────────────────────────────────────────────────
-// Paystack redirects here after checkout. Re-verifies and completes the
-// purchase (idempotent — the webhook may have already done this), then shows
-// the result with a link into the textbook.
+// Flutterwave redirects here after checkout with query params:
+//   ?tx_ref=APX_xxx&transaction_id=12345&status=successful
+//
+// We re-verify and complete the purchase idempotently — the webhook may have
+// already done this. Both paths are safe to run concurrently.
+//
+// The transaction_id param is used for direct GET /v3/transactions/:id/verify
+// (faster). tx_ref is used as the DB lookup key and as the fallback reference
+// when transaction_id is absent.
 
 export default async function PurchaseCallbackPage({
   searchParams,
 }: {
-  searchParams: Promise<{ reference?: string }>;
+  searchParams: Promise<{ tx_ref?: string; transaction_id?: string; reference?: string }>;
 }) {
   const session = await requireRole("STUDENT");
-  const { reference } = await searchParams;
+  const { tx_ref, transaction_id } = await searchParams;
 
-  if (!reference) {
+  const purchaseRef = tx_ref;
+  if (!purchaseRef) {
     notFound();
   }
 
   const purchase = await db.purchase.findUnique({
-    where: { paystackReference: reference },
+    where: { paymentReference: purchaseRef },
     select: {
       studentId: true,
       textbook: { select: { id: true, title: true } },
@@ -35,7 +42,8 @@ export default async function PurchaseCallbackPage({
     notFound();
   }
 
-  const result = await completePurchaseByReference(reference);
+  const flwTransactionId = transaction_id ? Number(transaction_id) : undefined;
+  const result = await completePurchaseByReference(purchaseRef, flwTransactionId);
   const { textbook } = purchase;
 
   const success = result.status === "completed" || result.status === "already_completed";

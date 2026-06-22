@@ -56,7 +56,7 @@ export function TextbookSalesRow({ title, price, copiesSold, revenue, buyers }: 
             </div>
             <div className="rounded-card border border-card-border bg-muted/40 p-3">
               <p className="text-[18px] font-bold leading-none text-foreground">{naira(revenue)}</p>
-              <p className="mt-1 text-[12px] text-muted-foreground">Revenue Generated</p>
+              <p className="mt-1 text-[12px] text-muted-foreground">Your Earnings</p>
             </div>
           </div>
 

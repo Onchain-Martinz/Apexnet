@@ -1,67 +1,27 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// Apex — Production Schema
-// Database : PostgreSQL
-// IDs      : UUID v4 via gen_random_uuid() (native Postgres, no extension needed)
-// Naming   : snake_case table names, camelCase Prisma fields
-// ─────────────────────────────────────────────────────────────────────────────
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Enums
-// ─────────────────────────────────────────────────────────────────────────────
-
-enum Role {
-  STUDENT
-  LECTURER
-  ADMIN
-}
-
-enum TextbookStatus {
-  DRAFT      // Saved but not yet published
-  PUBLISHED  // Live and visible to students
-  ARCHIVED   // Removed from catalogue
-}
-
-enum PurchaseStatus {
-  PENDING   // Payment initiated, awaiting Paystack webhook
-  COMPLETED // Payment confirmed, library access granted
-  FAILED    // Payment failed or timed out
-}
-
-enum PayoutStatus {
-  PENDING    // Earnings accumulated, not yet requested
-  PROCESSING // Transfer initiated via Paystack
-  PAID       // Transfer confirmed
-  FAILED     // Transfer failed, needs retry
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 1. Universities
-// ─────────────────────────────────────────────────────────────────────────────
 
 model University {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name      String
-  shortName String   // e.g. "UNILAG", "ABU", "OAU"
-  country   String   @default("Nigeria")
-  state     String?
-  logoUrl   String?
-  website   String?
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
+  id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name             String
+  shortName        String
+  country          String            @default("Nigeria")
+  state            String?
+  logoUrl          String?
+  website          String?
+  isActive         Boolean           @default(true)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
   departments      Department[]
-  studentProfiles  StudentProfile[]
   lecturerProfiles LecturerProfile[]
+  studentProfiles  StudentProfile[]
   textbooks        Textbook[]
 
   @@unique([name, country])
@@ -70,22 +30,18 @@ model University {
   @@map("universities")
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 2. Departments
-// ─────────────────────────────────────────────────────────────────────────────
-
 model Department {
-  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  universityId String   @db.Uuid
-  name         String   // e.g. "Computer Science"
-  code         String?  // e.g. "CSC"
-  faculty      String?  // e.g. "Faculty of Science"
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
+  id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  universityId     String            @db.Uuid
+  name             String
+  code             String?
+  faculty          String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  courses          Course[]
   university       University        @relation(fields: [universityId], references: [id], onDelete: Cascade)
-  studentProfiles  StudentProfile[]
   lecturerProfiles LecturerProfile[]
+  studentProfiles  StudentProfile[]
   textbooks        Textbook[]
 
   @@unique([universityId, name])
@@ -93,43 +49,48 @@ model Department {
   @@map("departments")
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 3. Users
-// ─────────────────────────────────────────────────────────────────────────────
+model Course {
+  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  departmentId String     @db.Uuid
+  code         String
+  title        String
+  level        Int
+  semester     Int
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  textbooks    Textbook[]
+
+  @@unique([departmentId, code])
+  @@index([departmentId, level, semester])
+  @@map("courses")
+}
 
 model User {
-  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email          String    @unique
-  name           String?
-  avatarUrl      String?
-  role           Role      @default(STUDENT)
-  hashedPassword String?   // Null for OAuth-only accounts
-  emailVerified  DateTime?
-  isActive       Boolean   @default(true)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-
-  // NextAuth
-  accounts Account[]
-  sessions Session[]
-
-  // Profiles (only one will be populated per user based on role)
-  studentProfile  StudentProfile?
-  lecturerProfile LecturerProfile?
-
-  // Transactional relations (scoped to students only at query level)
-  purchases      Purchase[]
-  studentLibrary StudentLibrary[]
-  readingProgress ReadingProgress[]
+  id                   String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email                String                @unique
+  name                 String?
+  avatarUrl            String?
+  role                 Role                  @default(STUDENT)
+  hashedPassword       String?
+  isActive             Boolean               @default(true)
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  emailVerifiedAt      DateTime?
+  accounts             Account[]
+  emailVerificationOtp EmailVerificationOtp?
+  lecturerProfile      LecturerProfile?
+  passwordResetOtp     PasswordResetOtp?
+  purchases            Purchase[]
+  readingProgress      ReadingProgress[]
+  sessions             Session[]
+  studentLibrary       StudentLibrary[]
+  studentProfile       StudentProfile?
 
   @@index([role])
   @@index([isActive])
   @@map("users")
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// NextAuth — Required adapter tables
-// ─────────────────────────────────────────────────────────────────────────────
 
 model Account {
   id                String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -137,15 +98,14 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
   @@index([userId])
@@ -157,8 +117,7 @@ model Session {
   sessionToken String   @unique
   userId       String   @db.Uuid
   expires      DateTime
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@map("sessions")
@@ -173,59 +132,74 @@ model VerificationToken {
   @@map("verification_tokens")
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 4. Student Profiles
-// ─────────────────────────────────────────────────────────────────────────────
+model EmailVerificationOtp {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String   @unique @db.Uuid
+  codeHash   String
+  expiresAt  DateTime
+  attempts   Int      @default(0)
+  lastSentAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("email_verification_otps")
+}
+
+model PasswordResetOtp {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String   @unique @db.Uuid
+  codeHash   String
+  expiresAt  DateTime
+  attempts   Int      @default(0)
+  lastSentAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("password_reset_otps")
+}
 
 model StudentProfile {
-  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId         String   @unique @db.Uuid
-  universityId   String?  @db.Uuid
-  departmentId   String?  @db.Uuid
-  // Academic level: 100 | 200 | 300 | 400 | 500 — Int avoids rigid enum
-  level          Int?
-  matricNumber   String?  @unique
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  university University? @relation(fields: [universityId], references: [id], onDelete: SetNull)
-  department Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  id           String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId       String      @unique @db.Uuid
+  universityId String?     @db.Uuid
+  departmentId String?     @db.Uuid
+  level        Int?
+  matricNumber String?     @unique
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  department   Department? @relation(fields: [departmentId], references: [id])
+  university   University? @relation(fields: [universityId], references: [id])
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([universityId])
   @@index([departmentId])
   @@map("student_profiles")
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 5. Lecturer Profiles
-// ─────────────────────────────────────────────────────────────────────────────
-
 model LecturerProfile {
-  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId       String   @unique @db.Uuid
-  universityId String?  @db.Uuid
-  departmentId String?  @db.Uuid
-  title        String?  // e.g. "Dr.", "Prof.", "Mr."
-  bio          String?  @db.Text
-  verified     Boolean   @default(false)
-  verifiedAt   DateTime?
-
-  // Bank details for payouts — store encrypted at app layer before saving
-  bankName          String?
-  bankAccountNumber String?
-  bankAccountName   String?
-  paystackRecipientCode String? // Created once via Paystack Transfer Recipients API
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  university University? @relation(fields: [universityId], references: [id], onDelete: SetNull)
-  department Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
-  textbooks  Textbook[]
-  payouts    Payout[]
-  withdrawalRequests WithdrawalRequest[]
+  id                    String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId                String              @unique @db.Uuid
+  universityId          String?             @db.Uuid
+  departmentId          String?             @db.Uuid
+  title                 String?
+  bio                   String?
+  bankName              String?
+  bankAccountNumber     String?
+  bankAccountName       String?
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+  verified              Boolean             @default(false)
+  verifiedAt            DateTime?
+  bankAccountVerifiedAt DateTime?
+  bankCode              String?
+  department            Department?         @relation(fields: [departmentId], references: [id])
+  university            University?         @relation(fields: [universityId], references: [id])
+  user                  User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payouts               Payout[]
+  textbooks             Textbook[]
+  withdrawalRequests    WithdrawalRequest[]
 
   @@index([universityId])
   @@index([departmentId])
@@ -233,109 +207,83 @@ model LecturerProfile {
   @@map("lecturer_profiles")
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 6. Textbooks
-// ─────────────────────────────────────────────────────────────────────────────
-
 model Textbook {
-  id           String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  lecturerId   String         @db.Uuid
-  universityId String?        @db.Uuid
-  departmentId String?        @db.Uuid
-
-  title          String
-  description    String?        @db.Text
-  coverImageKey  String?        // Cloudflare R2 object key
-  fileKey        String?        // Cloudflare R2 object key (PDF)
-  isbn           String?        @unique
-  edition        String?        // e.g. "3rd"
+  id              String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  lecturerId      String            @db.Uuid
+  universityId    String?           @db.Uuid
+  departmentId    String?           @db.Uuid
+  title           String
+  description     String?
+  coverImageKey   String?
+  fileKey         String?
+  isbn            String?           @unique
+  edition         String?
   publicationYear Int?
-  courseCode     String?        // e.g. "CSC 301"
-  // Target academic level: 100–500, null = all levels
-  level          Int?
-  totalPages     Int?
-  fileSizeBytes  BigInt?
-
-  price    Decimal        @db.Decimal(10, 2)
-  isFree   Boolean        @default(false)
-  status   TextbookStatus @default(DRAFT)
-  publishedAt DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  lecturer   LecturerProfile @relation(fields: [lecturerId], references: [id])
-  university University?     @relation(fields: [universityId], references: [id], onDelete: SetNull)
-  department Department?     @relation(fields: [departmentId], references: [id], onDelete: SetNull)
-
-  purchases      Purchase[]
-  studentLibrary StudentLibrary[]
+  courseCode      String?
+  level           Int?
+  totalPages      Int?
+  fileSizeBytes   BigInt?
+  price           Decimal           @db.Decimal(10, 2)
+  isFree          Boolean           @default(false)
+  status          TextbookStatus    @default(DRAFT)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  publishedAt     DateTime?
+  courseId        String?           @db.Uuid
+  purchases       Purchase[]
   readingProgress ReadingProgress[]
+  studentLibrary  StudentLibrary[]
+  course          Course?           @relation(fields: [courseId], references: [id])
+  department      Department?       @relation(fields: [departmentId], references: [id])
+  lecturer        LecturerProfile   @relation(fields: [lecturerId], references: [id])
+  university      University?       @relation(fields: [universityId], references: [id])
 
   @@index([lecturerId])
   @@index([universityId])
   @@index([departmentId])
+  @@index([courseId])
   @@index([status])
-  // Compound: common query — books available at a specific university/department
   @@index([universityId, departmentId, status])
+  @@index([status, courseCode])
   @@map("textbooks")
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 7. Purchases
-// ─────────────────────────────────────────────────────────────────────────────
-
 model Purchase {
-  id         String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  studentId  String         @db.Uuid
-  textbookId String         @db.Uuid
-  payoutId   String?        @db.Uuid // Set when included in a lecturer payout
-
-  amount   Decimal        @db.Decimal(10, 2)
-  currency String         @default("NGN")
-  status   PurchaseStatus @default(PENDING)
-
-  // Paystack fields
-  paystackReference  String   @unique // Our generated reference sent to Paystack
-  paystackAccessCode String?           // Returned by Paystack on initialise
-  paystackChannel    String?           // e.g. "card", "bank", "ussd"
-
-  paidAt    DateTime?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-
-  student  User             @relation(fields: [studentId], references: [id])
-  textbook Textbook         @relation(fields: [textbookId], references: [id])
-  payout   Payout?          @relation(fields: [payoutId], references: [id])
-  library  StudentLibrary?  // Created on COMPLETED
+  id               String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  studentId        String          @db.Uuid
+  textbookId       String          @db.Uuid
+  payoutId         String?         @db.Uuid
+  amount           Decimal         @db.Decimal(10, 2)
+  currency         String          @default("NGN")
+  status           PurchaseStatus  @default(PENDING)
+  paymentReference String          @unique @map("paystackReference")
+  paymentChannel   String?         @map("paystackChannel")
+  paidAt           DateTime?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  payout           Payout?         @relation(fields: [payoutId], references: [id])
+  student          User            @relation(fields: [studentId], references: [id])
+  textbook         Textbook        @relation(fields: [textbookId], references: [id])
+  library          StudentLibrary?
 
   @@index([studentId])
   @@index([textbookId])
   @@index([status])
   @@index([payoutId])
-  // Compound: lecturer earnings — joins via textbook.lecturerId
   @@index([textbookId, status])
   @@map("purchases")
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 8. Student Library
-// Represents access rights — one row per (student, textbook) pair.
-// Created automatically when a purchase completes, or directly for free books.
-// ─────────────────────────────────────────────────────────────────────────────
-
 model StudentLibrary {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  studentId  String   @db.Uuid
-  textbookId String   @db.Uuid
-  purchaseId String?  @unique @db.Uuid // Null for free textbooks
-  // Null expiresAt = perpetual access (standard purchase)
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  studentId  String    @db.Uuid
+  textbookId String    @db.Uuid
+  purchaseId String?   @unique @db.Uuid
   expiresAt  DateTime?
   addedAt    DateTime  @default(now())
-
-  student  User      @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  textbook Textbook  @relation(fields: [textbookId], references: [id])
-  purchase Purchase? @relation(fields: [purchaseId], references: [id])
+  purchase   Purchase? @relation(fields: [purchaseId], references: [id])
+  student    User      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  textbook   Textbook  @relation(fields: [textbookId], references: [id])
 
   @@unique([studentId, textbookId])
   @@index([studentId])
@@ -343,94 +291,102 @@ model StudentLibrary {
   @@map("student_library")
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 9. Reading Progress
-// Upserted on every meaningful page turn. One row per (student, textbook).
-// ─────────────────────────────────────────────────────────────────────────────
-
 model ReadingProgress {
   id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   studentId   String   @db.Uuid
   textbookId  String   @db.Uuid
   currentPage Int      @default(0)
   totalPages  Int?
-  percentage  Float    @default(0) // 0.0 – 100.0
+  percentage  Float    @default(0)
   lastReadAt  DateTime @default(now())
   updatedAt   DateTime @updatedAt
-
-  student  User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  textbook Textbook @relation(fields: [textbookId], references: [id], onDelete: Cascade)
+  student     User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  textbook    Textbook @relation(fields: [textbookId], references: [id], onDelete: Cascade)
 
   @@unique([studentId, textbookId])
   @@index([studentId])
   @@map("reading_progress")
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 10. Payouts
-// Represents a batch payout to a lecturer for a given billing period.
-// Linked to the individual purchases that compose it via Purchase.payoutId.
-// ─────────────────────────────────────────────────────────────────────────────
-
 model Payout {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  lecturerId String   @db.Uuid
+  id                String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  lecturerId        String          @db.Uuid
+  period            String
+  purchaseCount     Int             @default(0)
+  grossAmount       Decimal         @db.Decimal(12, 2)
+  platformFeeRate   Decimal         @db.Decimal(5, 4)
+  platformFeeAmount Decimal         @db.Decimal(12, 2)
+  netAmount         Decimal         @db.Decimal(12, 2)
+  currency          String          @default("NGN")
+  status            PayoutStatus    @default(PENDING)
+  transferCode      String?         @map("paystackTransferCode")
+  failureReason     String?
+  processedAt       DateTime?
+  paidAt            DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  lecturer          LecturerProfile @relation(fields: [lecturerId], references: [id])
+  purchases         Purchase[]
 
-  // Billing period in ISO format: "2025-05" (YYYY-MM)
-  period        String
-  purchaseCount Int    @default(0)
-
-  grossAmount      Decimal @db.Decimal(12, 2) // Sum of purchase amounts
-  platformFeeRate  Decimal @db.Decimal(5, 4)  // e.g. 0.2000 = 20%
-  platformFeeAmount Decimal @db.Decimal(12, 2)
-  netAmount        Decimal @db.Decimal(12, 2)  // grossAmount − platformFeeAmount
-  currency         String  @default("NGN")
-
-  status PayoutStatus @default(PENDING)
-
-  // Paystack Transfer fields — populated when status moves to PROCESSING
-  paystackTransferCode String?
-  failureReason        String? @db.Text
-
-  processedAt DateTime? // When transfer was initiated
-  paidAt      DateTime? // When transfer was confirmed
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  lecturer  LecturerProfile @relation(fields: [lecturerId], references: [id])
-  purchases Purchase[]
-
-  @@unique([lecturerId, period]) // One payout per lecturer per billing period
+  @@unique([lecturerId, period])
   @@index([lecturerId])
   @@index([status])
   @@map("payouts")
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-
-enum WithdrawalStatus {
-  PENDING  // Submitted by lecturer, awaiting admin review
-  APPROVED // Approved by admin (manual transfer happens outside the app)
-  REJECTED // Rejected by admin
-}
-
 model WithdrawalRequest {
-  id         String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  lecturerId String @db.Uuid
-
-  amount   Decimal @db.Decimal(12, 2)
-  currency String  @default("NGN")
-
-  status     WithdrawalStatus @default(PENDING)
-  reviewedAt DateTime?
-  reviewNote String?          @db.Text
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  lecturer LecturerProfile @relation(fields: [lecturerId], references: [id], onDelete: Cascade)
+  id                String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  lecturerId        String           @db.Uuid
+  amount            Decimal          @db.Decimal(12, 2)
+  currency          String           @default("NGN")
+  status            WithdrawalStatus @default(PENDING)
+  reviewedAt        DateTime?
+  reviewNote        String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  failureReason     String?
+  paidAt            DateTime?
+  transferCode      String?          @map("paystackTransferCode")
+  transferReference String?          @unique
+  failureHistory    Json?
+  retryCount        Int              @default(0)
+  lecturer          LecturerProfile  @relation(fields: [lecturerId], references: [id], onDelete: Cascade)
 
   @@index([lecturerId])
   @@index([status])
   @@map("withdrawal_requests")
+}
+
+enum Role {
+  STUDENT
+  LECTURER
+  ADMIN
+}
+
+enum TextbookStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum PurchaseStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum PayoutStatus {
+  PENDING
+  PROCESSING
+  PAID
+  FAILED
+}
+
+enum WithdrawalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PROCESSING
+  PAID
+  FAILED
 }

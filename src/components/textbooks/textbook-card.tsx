@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { BookOpen } from "lucide-react";
 import { routes } from "@/config/routes";
+import { coverUrl } from "@/lib/utils/cover-url";
 
 export interface TextbookCardData {
   id: string;
@@ -20,33 +21,28 @@ function priceLabel(price: number, isFree: boolean): string {
   return `₦${price.toLocaleString("en-NG")}`;
 }
 
-function coverUrl(key: string | null): string | null {
-  if (!key) return null;
-  const base = process.env.R2_PUBLIC_URL;
-  if (!base) return null;
-  return `${base.replace(/\/$/, "")}/${key.replace(/^\//, "")}`;
-}
-
-// ── Vertical card — used on Discover and Student Home ───────────────────────
+// ── Flat Finder-style item — used on Discover, Student Home, Marketing ──────
+// No card chrome. Mirrors SemesterMaterialCard's hierarchy (cover → code →
+// title → price badge → lecturer caption) so every book grid in Apexnet
+// reads as one consistent browsing language.
 
 export function TextbookCard({ textbook }: { textbook: TextbookCardData }) {
-  const cover = coverUrl(textbook.coverImageKey);
-  const meta = [textbook.department?.name, textbook.level ? `${textbook.level} Level` : null]
-    .filter(Boolean)
-    .join(" · ");
+  const cover = coverUrl(textbook.id, textbook.coverImageKey);
+  const isFree = textbook.isFree || textbook.price === 0;
 
   return (
     <Link
       href={routes.textbook(textbook.id)}
-      className="flex flex-col overflow-hidden rounded-card border border-card-border bg-card shadow-card transition-all duration-150 active:scale-[0.97]"
+      className="flex flex-col items-center gap-2 py-3 text-center transition-transform duration-150 active:scale-[0.97]"
     >
-      <div className="flex aspect-[3/4] w-full items-center justify-center bg-muted">
+      <div className="flex aspect-[3/4] w-full items-center justify-center overflow-hidden rounded-md bg-muted shadow-md">
         {cover ? (
           <Image
             src={cover}
             alt={textbook.title}
             width={240}
             height={320}
+            sizes="(min-width: 1280px) 18vw, (min-width: 768px) 22vw, 40vw"
             className="h-full w-full object-cover"
           />
         ) : (
@@ -54,20 +50,28 @@ export function TextbookCard({ textbook }: { textbook: TextbookCardData }) {
         )}
       </div>
 
-      <div className="space-y-1 p-3">
-        <p className="line-clamp-2 text-[14px] font-semibold leading-tight text-foreground">
-          {textbook.title}
+      {textbook.courseCode && (
+        <p className="mt-2.5 max-w-full truncate text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+          {textbook.courseCode}
         </p>
-        <p className="truncate text-[12px] text-muted-foreground">
-          {textbook.lecturer.user.name ?? "Unknown lecturer"}
-        </p>
-        {meta && (
-          <p className="truncate text-[12px] text-muted-foreground">{meta}</p>
-        )}
-        <p className="text-[13px] font-semibold text-foreground">
-          {priceLabel(textbook.price, textbook.isFree)}
-        </p>
-      </div>
+      )}
+      <p className="line-clamp-2 min-h-[36px] px-1 text-[13px] font-bold leading-snug text-foreground">
+        {textbook.title}
+      </p>
+
+      <span
+        className={
+          isFree
+            ? "inline-flex items-center rounded-full bg-success/10 px-1.5 py-0.5 text-[10px] font-medium leading-none text-success"
+            : "inline-flex items-center rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium leading-none text-primary"
+        }
+      >
+        {priceLabel(textbook.price, textbook.isFree)}
+      </span>
+
+      <p className="mt-1 truncate text-[11px] text-muted-foreground">
+        {textbook.lecturer.user.name ?? "Unknown lecturer"}
+      </p>
     </Link>
   );
 }
@@ -75,7 +79,7 @@ export function TextbookCard({ textbook }: { textbook: TextbookCardData }) {
 // ── Horizontal row — used in "Recently Added" lists ──────────────────────────
 
 export function TextbookRow({ textbook }: { textbook: TextbookCardData }) {
-  const cover = coverUrl(textbook.coverImageKey);
+  const cover = coverUrl(textbook.id, textbook.coverImageKey);
   const meta = [textbook.department?.name, textbook.level ? `${textbook.level} Level` : null]
     .filter(Boolean)
     .join(" · ");

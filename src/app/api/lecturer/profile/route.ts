@@ -40,8 +40,7 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.errors[0].message }, { status: 422 });
   }
 
-  const { title, universityName, departmentName, bankName, bankAccountNumber, bankAccountName } =
-    parsed.data;
+  const { title, universityName, departmentName } = parsed.data;
 
   const lecturerProfile = await db.lecturerProfile.findUnique({
     where: { userId: session.user.id },
@@ -95,16 +94,10 @@ export async function PATCH(req: NextRequest) {
       title: title || null,
       universityId,
       departmentId,
-      bankName: bankName || null,
-      bankAccountNumber: bankAccountNumber || null,
-      bankAccountName: bankAccountName || null,
     },
     select: {
       id: true,
       title: true,
-      bankName: true,
-      bankAccountNumber: true,
-      bankAccountName: true,
       university: { select: { name: true } },
       department: { select: { name: true } },
     },

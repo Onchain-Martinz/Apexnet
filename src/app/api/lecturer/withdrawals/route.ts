@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { withdrawalRequestSchema } from "@/lib/validations/withdrawal";
+import { computeAvailableBalance } from "@/lib/withdrawals/balance";
 
 // ── GET /api/lecturer/withdrawals ───────────────────────────────────────────
 // Returns the lecturer's available balance and withdrawal request history.
@@ -24,11 +26,8 @@ export async function GET() {
     return NextResponse.json({ error: "Lecturer profile not found" }, { status: 404 });
   }
 
-  const [revenueAgg, withdrawals] = await Promise.all([
-    db.purchase.aggregate({
-      _sum: { amount: true },
-      where: { status: "COMPLETED", textbook: { lecturerId: lecturerProfile.id } },
-    }),
+  const [availableBalance, withdrawals] = await Promise.all([
+    computeAvailableBalance(db, lecturerProfile.id),
     db.withdrawalRequest.findMany({
       where: { lecturerId: lecturerProfile.id },
       orderBy: { createdAt: "desc" },
@@ -42,19 +41,19 @@ export async function GET() {
     }),
   ]);
 
-  const totalRevenue = Number(revenueAgg._sum.amount ?? 0);
-  const reserved = withdrawals
-    .filter((w) => w.status !== "REJECTED")
-    .reduce((sum, w) => sum + Number(w.amount), 0);
-
-  return NextResponse.json({
-    availableBalance: Math.max(0, totalRevenue - reserved),
-    withdrawals,
-  });
+  return NextResponse.json({ availableBalance, withdrawals });
 }
 
 // ── POST /api/lecturer/withdrawals ──────────────────────────────────────────
 // Submits a new withdrawal request for the authenticated lecturer.
+//
+// Balance validation + creation happen inside a single Serializable
+// transaction so concurrent requests can't both read the same available
+// balance and both insert a WithdrawalRequest that, combined, oversubscribe
+// it. Postgres aborts the loser with a serialization failure (Prisma error
+// P2034), which we retry a few times before giving up.
+
+const MAX_SERIALIZATION_RETRIES = 3;
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -86,35 +85,48 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Lecturer profile not found" }, { status: 404 });
   }
 
-  const [revenueAgg, withdrawals] = await Promise.all([
-    db.purchase.aggregate({
-      _sum: { amount: true },
-      where: { status: "COMPLETED", textbook: { lecturerId: lecturerProfile.id } },
-    }),
-    db.withdrawalRequest.findMany({
-      where: { lecturerId: lecturerProfile.id, status: { not: "REJECTED" } },
-      select: { amount: true },
-    }),
-  ]);
+  for (let attempt = 1; attempt <= MAX_SERIALIZATION_RETRIES; attempt++) {
+    try {
+      const withdrawal = await db.$transaction(
+        async (tx) => {
+          const availableBalance = await computeAvailableBalance(tx, lecturerProfile.id);
 
-  const totalRevenue = Number(revenueAgg._sum.amount ?? 0);
-  const reserved = withdrawals.reduce((sum, w) => sum + Number(w.amount), 0);
-  const availableBalance = Math.max(0, totalRevenue - reserved);
+          if (parsed.data.amount > availableBalance) {
+            throw new InsufficientBalanceError();
+          }
 
-  if (parsed.data.amount > availableBalance) {
-    return NextResponse.json(
-      { error: "Amount exceeds available balance" },
-      { status: 422 },
-    );
+          return tx.withdrawalRequest.create({
+            data: {
+              lecturerId: lecturerProfile.id,
+              amount: parsed.data.amount,
+            },
+            select: { id: true, amount: true, status: true, createdAt: true, reviewedAt: true },
+          });
+        },
+        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+      );
+
+      return NextResponse.json({ success: true, withdrawal }, { status: 201 });
+    } catch (error) {
+      if (error instanceof InsufficientBalanceError) {
+        return NextResponse.json({ error: "Amount exceeds available balance" }, { status: 422 });
+      }
+
+      // Postgres serialization failure (40001) — another concurrent
+      // withdrawal request committed first. Retry with a fresh balance read.
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2034") {
+        if (attempt < MAX_SERIALIZATION_RETRIES) continue;
+        return NextResponse.json(
+          { error: "Too many concurrent requests. Please try again." },
+          { status: 409 },
+        );
+      }
+
+      throw error;
+    }
   }
 
-  const withdrawal = await db.withdrawalRequest.create({
-    data: {
-      lecturerId: lecturerProfile.id,
-      amount: parsed.data.amount,
-    },
-    select: { id: true, amount: true, status: true, createdAt: true, reviewedAt: true },
-  });
-
-  return NextResponse.json({ success: true, withdrawal }, { status: 201 });
+  return NextResponse.json({ error: "Too many concurrent requests. Please try again." }, { status: 409 });
 }
+
+class InsufficientBalanceError extends Error {}

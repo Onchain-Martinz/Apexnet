@@ -27,7 +27,7 @@ type NavItem = {
 
 const STUDENT_NAV: NavItem[] = [
   { href: "/student",          label: "Home",     icon: Home,      exact: true },
-  { href: "/student/discover", label: "Discover", icon: Compass },
+  { href: "/student/discover", label: "D-Library", icon: Compass },
   { href: "/student/library",  label: "Library",  icon: BookMarked },
   { href: "/student/settings", label: "Profile",  icon: User },
 ];

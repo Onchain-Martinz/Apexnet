@@ -3,10 +3,13 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { completePurchaseByReference } from "@/lib/purchases/complete";
 
-// ── GET /api/purchases/verify?reference= ────────────────────────────────────
-// Fallback completion path for the browser redirect back from Paystack
-// checkout. Re-verifies the transaction and applies the same idempotent
-// completion logic as the webhook.
+// ── GET /api/purchases/verify?reference=&transaction_id= ────────────────────
+// Client-callable fallback completion path. Re-verifies the transaction with
+// Flutterwave and applies the same idempotent completion logic as the webhook.
+//
+// transaction_id is optional but improves verification accuracy — when present,
+// Flutterwave is queried by ID (GET /v3/transactions/:id/verify) rather than
+// by reference (slower query-based lookup).
 
 export async function GET(req: NextRequest) {
   const session = await auth();
@@ -15,12 +18,14 @@ export async function GET(req: NextRequest) {
   }
 
   const reference = req.nextUrl.searchParams.get("reference");
+  const transactionIdParam = req.nextUrl.searchParams.get("transaction_id");
+
   if (!reference) {
     return NextResponse.json({ error: "reference is required" }, { status: 422 });
   }
 
   const purchase = await db.purchase.findUnique({
-    where: { paystackReference: reference },
+    where: { paymentReference: reference },
     select: { studentId: true, textbookId: true },
   });
 
@@ -28,7 +33,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Purchase not found" }, { status: 404 });
   }
 
-  const result = await completePurchaseByReference(reference);
+  const flwTransactionId = transactionIdParam ? Number(transactionIdParam) : undefined;
+  const result = await completePurchaseByReference(reference, flwTransactionId);
 
   return NextResponse.json({ status: result.status, textbookId: purchase.textbookId });
 }

@@ -1,10 +1,18 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
 import { registerSchema } from "@/lib/validations/auth";
+import { checkRateLimit, getClientIp, rateLimitResponse, RATE_LIMITS } from "@/lib/rate-limit";
+import { issueEmailVerificationOtp } from "@/lib/auth/email-verification";
 import type { Role } from "@prisma/client";
+import { captureException } from "@/lib/monitoring";
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+  const rateLimit = checkRateLimit(`register:${getClientIp(req)}`, RATE_LIMITS.AUTH);
+  if (!rateLimit.allowed) {
+    return rateLimitResponse(rateLimit);
+  }
+
   try {
     const body = await req.json();
     const parsed = registerSchema.safeParse(body);
@@ -34,7 +42,7 @@ export async function POST(req: Request) {
 
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    await db.$transaction(async (tx) => {
+    const user = await db.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: {
           name: name.trim(),
@@ -53,9 +61,12 @@ export async function POST(req: Request) {
       return user;
     });
 
+    await issueEmailVerificationOtp(user);
+
     return NextResponse.json({ success: true }, { status: 201 });
   } catch (err) {
     console.error("[REGISTER]", err);
+    captureException(err);
     return NextResponse.json(
       { error: "Something went wrong. Please try again." },
       { status: 500 }
