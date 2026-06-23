@@ -1,10 +1,12 @@
 // Shared formatting utilities
 
+// Textbook prices are always whole Naira — no Kobo/decimals.
 export function formatPrice(amount: number, currency = "NGN"): string {
   return new Intl.NumberFormat("en-NG", {
     style: "currency",
     currency,
     minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
   }).format(amount);
 }
 

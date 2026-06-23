@@ -56,8 +56,11 @@ function QuickLink({ href, label }: { href: string; label: string }) {
 export default async function AdminPage() {
   await requireRole("ADMIN");
 
+  // db.$transaction([...]) batches these 6 reads onto a single pooled
+  // connection (one BEGIN/COMMIT round trip) instead of Promise.all's 6
+  // concurrent connection checkouts — Neon's pool here is capped at 5.
   const [revenueAgg, totalStudents, totalLecturers, publishedTextbooks, booksSold, pendingWithdrawals] =
-    await Promise.all([
+    await db.$transaction([
       db.purchase.aggregate({ _sum: { amount: true }, where: { status: "COMPLETED" } }),
       db.user.count({ where: { role: "STUDENT" } }),
       db.user.count({ where: { role: "LECTURER" } }),

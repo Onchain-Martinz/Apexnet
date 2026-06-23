@@ -36,8 +36,12 @@ export type BookItem = {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+// Revenue/sales figures (kobo-precision, derived from LECTURER_SHARE_RATE).
 const naira = (n: number) =>
   `₦${n.toLocaleString("en-NG", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+
+// Textbook listing price — always a whole Naira amount, no Kobo.
+const nairaWhole = (n: number) => `₦${n.toLocaleString("en-NG", { maximumFractionDigits: 0 })}`;
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-NG", {
@@ -286,7 +290,7 @@ function BookCard({
   onViewMetrics: () => void;
 }) {
   const { id, title, price, status, coverImageKey } = book;
-  const priceLabel = price === 0 ? "Free" : naira(price);
+  const priceLabel = price === 0 ? "Free" : nairaWhole(price);
 
   return (
     <div className="flex flex-col overflow-hidden rounded-[18px] border border-[#EAEAEA] bg-white shadow-[0_2px_16px_rgba(0,0,0,0.07)]">

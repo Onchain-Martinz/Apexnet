@@ -11,11 +11,16 @@ import { cn } from "@/lib/utils/cn";
 
 type Role = "STUDENT" | "LECTURER";
 
+const LEVELS = [100, 200, 300, 400, 500];
+
 type FieldErrors = {
   name?: string;
   email?: string;
   password?: string;
   confirmPassword?: string;
+  universityName?: string;
+  departmentName?: string;
+  level?: string;
 };
 
 
@@ -27,6 +32,9 @@ export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [universityName, setUniversityName] = useState("");
+  const [departmentName, setDepartmentName] = useState("");
+  const [level, setLevel] = useState("");
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [globalError, setGlobalError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -42,6 +50,9 @@ export default function SignupPage() {
       password,
       confirmPassword,
       role,
+      universityName,
+      departmentName,
+      level: level === "" ? undefined : level,
     });
 
     if (!parsed.success) {
@@ -61,7 +72,14 @@ export default function SignupPage() {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password, confirmPassword, role }),
+        body: JSON.stringify({
+          name,
+          email,
+          password,
+          confirmPassword,
+          role,
+          ...(role === "STUDENT" ? { universityName, departmentName, level } : {}),
+        }),
       });
 
       const data = await res.json();
@@ -163,6 +181,64 @@ export default function SignupPage() {
           error={fieldErrors.email}
           disabled={loading}
         />
+
+        {role === "STUDENT" && (
+          <>
+            <Input
+              label="University"
+              type="text"
+              placeholder="e.g. University of Lagos"
+              value={universityName}
+              onChange={(e) => setUniversityName(e.target.value)}
+              error={fieldErrors.universityName}
+              disabled={loading}
+            />
+
+            <Input
+              label="Department"
+              type="text"
+              placeholder="e.g. Psychology"
+              value={departmentName}
+              onChange={(e) => setDepartmentName(e.target.value)}
+              error={fieldErrors.departmentName}
+              disabled={loading}
+            />
+
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="level" className="text-sm font-medium text-foreground">
+                Level
+              </label>
+              <select
+                id="level"
+                value={level}
+                onChange={(e) => setLevel(e.target.value)}
+                disabled={loading}
+                className={cn(
+                  "h-12 w-full rounded-input border bg-background px-4",
+                  "text-[16px] sm:text-[15px]",
+                  "transition-all duration-150",
+                  "focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-foreground",
+                  level === "" ? "text-muted-foreground" : "text-foreground",
+                  fieldErrors.level
+                    ? "border-destructive focus:ring-destructive/20"
+                    : "border-border",
+                )}
+              >
+                <option value="" disabled>
+                  Select level
+                </option>
+                {LEVELS.map((l) => (
+                  <option key={l} value={l}>
+                    {l} Level
+                  </option>
+                ))}
+              </select>
+              {fieldErrors.level && (
+                <p className="text-caption text-destructive" role="alert">{fieldErrors.level}</p>
+              )}
+            </div>
+          </>
+        )}
 
         <PasswordInput
           label="Password"

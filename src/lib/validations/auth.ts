@@ -34,10 +34,28 @@ export const registerSchema = z
     role: z.enum(["STUDENT", "LECTURER"], {
       required_error: "Please select a role",
     }),
+    // Required for STUDENT role only — the dashboard's course matching
+    // depends entirely on departmentId + level. Lecturers set these via
+    // their own profile edit page after signup instead.
+    universityName: z.string().trim().max(200, "University name is too long").optional(),
+    departmentName: z.string().trim().max(100, "Department name is too long").optional(),
+    level: z.coerce.number().int().optional(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords do not match",
     path: ["confirmPassword"],
+  })
+  .refine((data) => data.role !== "STUDENT" || !!data.universityName?.trim(), {
+    message: "University is required",
+    path: ["universityName"],
+  })
+  .refine((data) => data.role !== "STUDENT" || !!data.departmentName?.trim(), {
+    message: "Department is required",
+    path: ["departmentName"],
+  })
+  .refine((data) => data.role !== "STUDENT" || [100, 200, 300, 400, 500].includes(data.level ?? -1), {
+    message: "Select a valid level",
+    path: ["level"],
   });
 
 export const forgotPasswordSchema = z.object({

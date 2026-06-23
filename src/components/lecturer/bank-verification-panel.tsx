@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
-import { Check } from "lucide-react";
+import { Check, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils/cn";
@@ -31,8 +31,23 @@ export function BankVerificationPanel({ initial }: { initial: BankVerificationDa
   const [bankCode, setBankCode] = useState(initial.bankCode);
   const [accountNumber, setAccountNumber] = useState(initial.bankAccountNumber);
 
+  const [bankSearch, setBankSearch] = useState("");
+  const [showBankResults, setShowBankResults] = useState(false);
+
   const [verifying, setVerifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Seed the search box with the already-selected bank's name once the bank
+  // list has loaded (e.g. re-opening "Change Bank Account" with a code set).
+  useEffect(() => {
+    if (banks.length === 0 || !bankCode || bankSearch) return;
+    const match = banks.find((b) => b.code === bankCode);
+    if (match) setBankSearch(match.name);
+  }, [banks, bankCode, bankSearch]);
+
+  const filteredBanks = banks.filter((b) =>
+    b.name.toLowerCase().includes(bankSearch.trim().toLowerCase()),
+  );
 
   useEffect(() => {
     if (!editing || banks.length > 0) return;
@@ -100,6 +115,8 @@ export function BankVerificationPanel({ initial }: { initial: BankVerificationDa
   function startEdit() {
     setBankCode(data.bankCode);
     setAccountNumber(data.bankAccountNumber);
+    setBankSearch("");
+    setShowBankResults(false);
     setError(null);
     setEditing(true);
   }
@@ -141,30 +158,68 @@ export function BankVerificationPanel({ initial }: { initial: BankVerificationDa
       </div>
 
       <form onSubmit={handleVerify} className="space-y-element">
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="bankCode" className="text-[13px] font-medium text-foreground">
+        <div
+          className="relative flex flex-col gap-1.5"
+          onBlur={(e) => {
+            if (!e.currentTarget.contains(e.relatedTarget as Node)) setShowBankResults(false);
+          }}
+        >
+          <label htmlFor="bankSearch" className="text-[13px] font-medium text-foreground">
             Bank
           </label>
-          <select
-            id="bankCode"
-            value={bankCode}
-            onChange={(e) => setBankCode(e.target.value)}
-            disabled={verifying || banksLoading}
-            className={cn(
-              "h-12 w-full rounded-input border bg-background px-4",
-              "text-[16px] sm:text-[15px] text-foreground",
-              "transition-all duration-150",
-              "focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-foreground",
-              "border-border",
-            )}
-          >
-            <option value="">{banksLoading ? "Loading banks…" : "Select a bank"}</option>
-            {banks.map((bank) => (
-              <option key={bank.code} value={bank.code}>
-                {bank.name}
-              </option>
-            ))}
-          </select>
+          <div className="relative">
+            <Search
+              className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+              aria-hidden
+            />
+            <input
+              id="bankSearch"
+              type="text"
+              autoComplete="off"
+              placeholder={banksLoading ? "Loading banks…" : "Search for your bank"}
+              value={bankSearch}
+              onChange={(e) => {
+                setBankSearch(e.target.value);
+                setBankCode("");
+                setShowBankResults(true);
+              }}
+              onFocus={() => setShowBankResults(true)}
+              disabled={verifying || banksLoading}
+              className={cn(
+                "h-12 w-full rounded-input border bg-background pl-11 pr-4",
+                "text-[16px] sm:text-[15px] text-foreground placeholder:text-muted-foreground",
+                "transition-all duration-150",
+                "focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-foreground",
+                "border-border",
+              )}
+            />
+          </div>
+
+          {showBankResults && (
+            <div className="max-h-56 overflow-y-auto rounded-input border border-border bg-background divide-y divide-border">
+              {filteredBanks.length === 0 ? (
+                <p className="px-4 py-3 text-[13px] text-muted-foreground">No banks found</p>
+              ) : (
+                filteredBanks.map((bank) => (
+                  <button
+                    key={bank.code}
+                    type="button"
+                    onClick={() => {
+                      setBankCode(bank.code);
+                      setBankSearch(bank.name);
+                      setShowBankResults(false);
+                    }}
+                    className={cn(
+                      "flex w-full items-center justify-between px-4 py-3 text-left text-[14px] transition-colors active:bg-muted",
+                      bankCode === bank.code ? "bg-muted font-semibold text-foreground" : "text-foreground",
+                    )}
+                  >
+                    {bank.name}
+                  </button>
+                ))
+              )}
+            </div>
+          )}
           {banksError && <p className="text-caption text-destructive">{banksError}</p>}
         </div>
 

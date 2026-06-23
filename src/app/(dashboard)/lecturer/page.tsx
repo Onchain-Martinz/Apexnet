@@ -73,8 +73,11 @@ export default async function LecturerPage() {
   if (lecturerProfile) {
     const lecturerId = lecturerProfile.id;
 
+    // db.$transaction([...]) instead of Promise.all: pins these 7 reads to a
+    // single pooled connection instead of checking out 7 concurrently — this
+    // page alone exceeded Neon's connection_limit=5 on a single visit.
     const [published, drafts, sales, revenueAgg, textbooks, purchases, withdrawals] =
-      await Promise.all([
+      await db.$transaction([
         db.textbook.count({ where: { lecturerId, status: "PUBLISHED" } }),
         db.textbook.count({ where: { lecturerId, status: "DRAFT" } }),
         db.purchase.count({ where: { status: "COMPLETED", textbook: { lecturerId } } }),

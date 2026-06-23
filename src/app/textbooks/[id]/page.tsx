@@ -53,7 +53,7 @@ export default async function TextbookDetailsPage({
       : null;
   const priceLabel = isFree
     ? "Free"
-    : `₦${Number(textbook.price).toLocaleString("en-NG")}`;
+    : `₦${Number(textbook.price).toLocaleString("en-NG", { maximumFractionDigits: 0 })}`;
 
   const meta = [textbook.department?.name, textbook.level ? `${textbook.level} Level` : null]
     .filter(Boolean)

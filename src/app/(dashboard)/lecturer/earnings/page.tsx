@@ -18,8 +18,10 @@ export default async function LecturerEarningsPage() {
 
   const lecturerId = lecturerProfile?.id ?? null;
 
+  // db.$transaction([...]) instead of Promise.all: pins these 2 reads to a
+  // single pooled connection instead of checking out 2 concurrently.
   const [textbooks, withdrawalRows] = lecturerId
-    ? await Promise.all([
+    ? await db.$transaction([
         db.textbook.findMany({
           where: { lecturerId },
           select: {

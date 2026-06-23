@@ -13,6 +13,8 @@ export default async function LecturerProfilePage() {
       lecturerProfile: {
         select: {
           title: true,
+          phone: true,
+          bio: true,
           verified: true,
           bankCode: true,
           bankName: true,
@@ -35,13 +37,15 @@ export default async function LecturerProfilePage() {
       </header>
 
       <ProfilePanel
-        name={user?.name ?? "—"}
         email={user?.email ?? ""}
         verified={profile?.verified ?? false}
         initial={{
+          name: user?.name ?? "",
           title: profile?.title ?? "",
           university: profile?.university?.name ?? "",
           department: profile?.department?.name ?? "",
+          phone: profile?.phone ?? "",
+          bio: profile?.bio ?? "",
         }}
         initialBank={{
           bankCode: profile?.bankCode ?? "",

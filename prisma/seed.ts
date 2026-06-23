@@ -16,6 +16,7 @@
 
 import { PrismaClient, Role } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { normalizeCourseCode } from "../src/lib/textbooks/course-code";
 
 const db = new PrismaClient();
 
@@ -182,12 +183,16 @@ async function main() {
   });
 
   for (const course of PSYCHOLOGY_COURSES) {
+    // Normalized defensively — the hardcoded codes above are already
+    // canonical, but this guarantees Course.code can never drift out of
+    // canonical form no matter what gets pasted into this list later.
+    const code = normalizeCourseCode(course.code);
     await db.course.upsert({
-      where: { departmentId_code: { departmentId: psychologyDept.id, code: course.code } },
+      where: { departmentId_code: { departmentId: psychologyDept.id, code } },
       update: { title: course.title, level: course.level, semester: PILOT_SEMESTER },
       create: {
         departmentId: psychologyDept.id,
-        code: course.code,
+        code,
         title: course.title,
         level: course.level,
         semester: PILOT_SEMESTER,
@@ -200,7 +205,7 @@ async function main() {
   // behind would silently keep matching old/wrong textbooks. Textbook.courseId
   // is an optional FK (default onDelete: SetNull), so any textbook still
   // linked to a retired course just loses that link — it is not deleted.
-  const officialCodes = PSYCHOLOGY_COURSES.map((c) => c.code);
+  const officialCodes = PSYCHOLOGY_COURSES.map((c) => normalizeCourseCode(c.code));
   const { count: retiredCount } = await db.course.deleteMany({
     where: {
       departmentId: psychologyDept.id,

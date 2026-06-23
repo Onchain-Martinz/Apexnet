@@ -16,8 +16,10 @@ function deriveShortName(name: string): string {
 }
 
 // ── PATCH /api/lecturer/profile ─────────────────────────────────────────────
-// Updates academic title, university/department (free-text, find-or-create),
-// and bank details for the authenticated lecturer. Storage only — no withdrawals.
+// Updates full name (User.name), academic title, university/department
+// (free-text, find-or-create), phone, and bio for the authenticated
+// lecturer. Bank details are managed separately via verify-bank — untouched
+// here. Storage only — no withdrawals.
 
 export async function PATCH(req: NextRequest) {
   const session = await auth();
@@ -40,7 +42,7 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.errors[0].message }, { status: 422 });
   }
 
-  const { title, universityName, departmentName } = parsed.data;
+  const { name, title, universityName, departmentName, phone, bio } = parsed.data;
 
   const lecturerProfile = await db.lecturerProfile.findUnique({
     where: { userId: session.user.id },
@@ -88,20 +90,30 @@ export async function PATCH(req: NextRequest) {
     }
   }
 
-  const updated = await db.lecturerProfile.update({
-    where: { id: lecturerProfile.id },
-    data: {
-      title: title || null,
-      universityId,
-      departmentId,
-    },
-    select: {
-      id: true,
-      title: true,
-      university: { select: { name: true } },
-      department: { select: { name: true } },
-    },
-  });
+  const [, updated] = await db.$transaction([
+    db.user.update({
+      where: { id: session.user.id },
+      data: { name },
+    }),
+    db.lecturerProfile.update({
+      where: { id: lecturerProfile.id },
+      data: {
+        title,
+        universityId,
+        departmentId,
+        phone,
+        bio: bio || null,
+      },
+      select: {
+        id: true,
+        title: true,
+        phone: true,
+        bio: true,
+        university: { select: { name: true } },
+        department: { select: { name: true } },
+      },
+    }),
+  ]);
 
-  return NextResponse.json({ success: true, profile: updated });
+  return NextResponse.json({ success: true, name, profile: updated });
 }

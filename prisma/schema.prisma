@@ -185,6 +185,7 @@ model LecturerProfile {
   departmentId          String?             @db.Uuid
   title                 String?
   bio                   String?
+  phone                 String?
   bankName              String?
   bankAccountNumber     String?
   bankAccountName       String?
@@ -223,7 +224,7 @@ model Textbook {
   level           Int?
   totalPages      Int?
   fileSizeBytes   BigInt?
-  price           Decimal           @db.Decimal(10, 2)
+  price           Int               // Whole Naira only — no Kobo/decimals. See normalizeCourseCode-style validator in src/lib/validations/textbook.ts.
   isFree          Boolean           @default(false)
   status          TextbookStatus    @default(DRAFT)
   createdAt       DateTime          @default(now())

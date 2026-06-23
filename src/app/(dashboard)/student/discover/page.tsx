@@ -47,7 +47,9 @@ export default async function StudentDiscoverPage({
   const departmentId = params.department?.trim() || undefined;
   const sort = parseSort(params.sort ?? null);
 
-  const [textbooks, departments] = await Promise.all([
+  // db.$transaction([...]) instead of Promise.all: pins these 2 reads to a
+  // single pooled connection instead of checking out 2 concurrently.
+  const [textbooks, departments] = await db.$transaction([
     db.textbook.findMany({
       where: buildDiscoverWhere({ q, level, departmentId }),
       orderBy: buildDiscoverOrderBy(sort),

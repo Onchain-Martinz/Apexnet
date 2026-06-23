@@ -35,7 +35,9 @@ function MetricCard({
 export default async function AdminRevenuePage() {
   await requireRole("ADMIN");
 
-  const [grossAgg, paidAgg, outstandingAgg, booksSold] = await Promise.all([
+  // db.$transaction([...]) instead of Promise.all: pins these 4 reads to a
+  // single pooled connection instead of checking out 4 concurrently.
+  const [grossAgg, paidAgg, outstandingAgg, booksSold] = await db.$transaction([
     db.purchase.aggregate({ _sum: { amount: true }, where: { status: "COMPLETED" } }),
     db.withdrawalRequest.aggregate({ _sum: { amount: true }, where: { status: "PAID" } }),
     db.withdrawalRequest.aggregate({

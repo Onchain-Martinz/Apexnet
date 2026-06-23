@@ -8,7 +8,7 @@ import { coverUrl } from "@/lib/utils/cover-url";
 import { TextbookActions } from "@/components/admin/textbook-actions";
 import type { TextbookStatus } from "@prisma/client";
 
-const naira = (amount: number) => `₦${amount.toLocaleString("en-NG")}`;
+const naira = (amount: number) => `₦${amount.toLocaleString("en-NG", { maximumFractionDigits: 0 })}`;
 
 // ── Status badge ─────────────────────────────────────────────────────────────
 
@@ -118,7 +118,7 @@ export default async function AdminTextbooksPage() {
               <div className="grid grid-cols-2 gap-2 text-center">
                 <div>
                   <p className="text-[16px] font-bold text-foreground">
-                    {textbook.price.toNumber() === 0 ? "Free" : naira(textbook.price.toNumber())}
+                    {textbook.price === 0 ? "Free" : naira(textbook.price)}
                   </p>
                   <p className="text-[11px] text-muted-foreground">Price</p>
                 </div>

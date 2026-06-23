@@ -18,7 +18,7 @@ export interface TextbookCardData {
 
 function priceLabel(price: number, isFree: boolean): string {
   if (isFree || price === 0) return "Free";
-  return `₦${price.toLocaleString("en-NG")}`;
+  return `₦${price.toLocaleString("en-NG", { maximumFractionDigits: 0 })}`;
 }
 
 // ── Flat Finder-style item — used on Discover, Student Home, Marketing ──────

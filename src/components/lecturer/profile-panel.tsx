@@ -9,10 +9,28 @@ import { Button } from "@/components/ui/button";
 import { BankVerificationPanel, type BankVerificationData } from "@/components/lecturer/bank-verification-panel";
 
 type ProfileData = {
+  name: string;
   title: string;
   university: string;
   department: string;
+  phone: string;
+  bio: string;
 };
+
+const REQUIRED_FIELDS: { key: keyof ProfileData; label: string }[] = [
+  { key: "name", label: "Full name" },
+  { key: "title", label: "Academic title" },
+  { key: "university", label: "University" },
+  { key: "department", label: "Department" },
+  { key: "phone", label: "Phone number" },
+];
+
+function validate(draft: ProfileData): string | null {
+  for (const { key, label } of REQUIRED_FIELDS) {
+    if (!draft[key].trim()) return `${label} is required`;
+  }
+  return null;
+}
 
 // ── Read-only field row ──────────────────────────────────────────────────────
 
@@ -26,13 +44,11 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 }
 
 export function ProfilePanel({
-  name,
   email,
   verified,
   initial,
   initialBank,
 }: {
-  name: string;
   email: string;
   verified: boolean;
   initial: ProfileData;
@@ -65,17 +81,27 @@ export function ProfilePanel({
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    setSaving(true);
     setError(null);
+
+    const validationError = validate(draft);
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    setSaving(true);
 
     try {
       const res = await fetch("/api/lecturer/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          name: draft.name,
           title: draft.title,
           universityName: draft.university,
           departmentName: draft.department,
+          phone: draft.phone,
+          bio: draft.bio,
         }),
       });
 
@@ -87,9 +113,12 @@ export function ProfilePanel({
       }
 
       const updated: ProfileData = {
+        name: data.name ?? "",
         title: data.profile.title ?? "",
         university: data.profile.university?.name ?? "",
         department: data.profile.department?.name ?? "",
+        phone: data.profile.phone ?? "",
+        bio: data.profile.bio ?? "",
       };
 
       setSaved(updated);
@@ -107,6 +136,15 @@ export function ProfilePanel({
   if (mode === "edit") {
     return (
       <form onSubmit={handleSubmit} className="space-y-element">
+        <Input
+          label="Full Name"
+          id="name"
+          placeholder="e.g. Dr. Jane Doe"
+          value={draft.name}
+          onChange={(e) => setField("name", e.target.value)}
+          disabled={saving}
+        />
+
         <Input
           label="Academic Title"
           id="title"
@@ -133,6 +171,31 @@ export function ProfilePanel({
           onChange={(e) => setField("department", e.target.value)}
           disabled={saving}
         />
+
+        <Input
+          label="Phone Number"
+          id="phone"
+          type="tel"
+          placeholder="e.g. 080xxxxxxxx"
+          value={draft.phone}
+          onChange={(e) => setField("phone", e.target.value)}
+          disabled={saving}
+        />
+
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="bio" className="text-[13px] font-medium text-foreground">
+            Bio <span className="font-normal text-muted-foreground">(optional)</span>
+          </label>
+          <textarea
+            id="bio"
+            placeholder="A short bio students will see on your books"
+            value={draft.bio}
+            onChange={(e) => setField("bio", e.target.value)}
+            disabled={saving}
+            rows={4}
+            className="w-full rounded-input border border-border bg-background px-4 py-3 text-[16px] sm:text-[15px] text-foreground placeholder:text-muted-foreground resize-none transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-foreground"
+          />
+        </div>
 
         {error && (
           <div className="rounded-input border border-destructive/30 bg-destructive/5 px-4 py-3">
@@ -170,11 +233,13 @@ export function ProfilePanel({
 
       {/* ── Identity card ── */}
       <section className="space-y-element rounded-card border border-card-border bg-card p-card shadow-card">
-        <InfoRow label="Name" value={name} />
+        <InfoRow label="Name" value={saved.name} />
         <InfoRow label="Email" value={email} />
         <InfoRow label="Academic Title" value={saved.title} />
         <InfoRow label="University" value={saved.university} />
         <InfoRow label="Department" value={saved.department} />
+        <InfoRow label="Phone Number" value={saved.phone} />
+        <InfoRow label="Bio" value={saved.bio} />
       </section>
 
       {/* ── Verification Status card ── */}

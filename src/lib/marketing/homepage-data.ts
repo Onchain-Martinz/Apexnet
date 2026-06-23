@@ -11,8 +11,12 @@ const TTL = 86_400; // 24 hours in seconds
 
 export const getHomepageData = unstable_cache(
   async () => {
+    // db.$transaction([...]) instead of Promise.all: pins these 5 reads to a
+    // single pooled connection instead of checking out 5 concurrently. Low
+    // real-world risk already (this only runs on a 24h cache miss), but free
+    // to fix and removes the worst-case spike on cold start / revalidation.
     const [publishedCount, lecturerCount, studentCount, purchaseCount, textbooks] =
-      await Promise.all([
+      await db.$transaction([
         db.textbook.count({ where: { status: "PUBLISHED" } }),
         db.user.count({ where: { role: "LECTURER" } }),
         db.user.count({ where: { role: "STUDENT" } }),

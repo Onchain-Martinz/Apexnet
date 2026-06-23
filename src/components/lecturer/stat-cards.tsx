@@ -22,8 +22,12 @@ export type SalesSummaryData = {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+// Revenue/sales figures (kobo-precision, derived from LECTURER_SHARE_RATE).
 const naira = (n: number) =>
   `₦${n.toLocaleString("en-NG", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+
+// Textbook listing price — always a whole Naira amount, no Kobo.
+const nairaWhole = (n: number) => `₦${n.toLocaleString("en-NG", { maximumFractionDigits: 0 })}`;
 
 // ── Bottom Sheet Scaffold ─────────────────────────────────────────────────────
 
@@ -123,7 +127,7 @@ function PublishedBooksSheet({
                     {book.title}
                   </p>
                   <p className="mt-0.5 text-[12px] text-[#64748B]">
-                    {book.price === 0 ? "Free" : naira(book.price)} ·{" "}
+                    {book.price === 0 ? "Free" : nairaWhole(book.price)} ·{" "}
                     {book.salesCount} {book.salesCount === 1 ? "sale" : "sales"}
                   </p>
                 </div>

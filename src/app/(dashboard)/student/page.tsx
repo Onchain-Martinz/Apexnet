@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { routes } from "@/config/routes";
 import { getTimeOfDayGreeting } from "@/lib/utils/format";
 import { getMaterialStatus, semesterMaterialSelect, courseTextbookSelect } from "@/lib/textbooks/semester-materials";
+import { normalizeCourseCode } from "@/lib/textbooks/course-code";
 import { SemesterOverviewCard } from "@/components/textbooks/semester-overview-card";
 import { SemesterMaterialCard } from "@/components/textbooks/semester-material-card";
 import { RecentMaterialCard } from "@/components/textbooks/recent-material-card";
@@ -93,8 +94,16 @@ export default async function StudentPage() {
     : [];
 
   // Course matching is courseCode-driven, not a courseId relation — a
-  // textbook belongs to a course when textbook.courseCode === course.code.
-  const courseCodes = courses.map((c) => c.code);
+  // textbook belongs to a course when normalizeCourseCode(textbook.courseCode)
+  // === normalizeCourseCode(course.code). Both sides are stored canonically
+  // (Course.code is seeded that way; textbook.courseCode is normalized at
+  // upload time and backfilled for any pre-existing row — see
+  // scripts/normalize-existing-course-codes.ts), which is what lets the SQL
+  // `courseCode: { in: courseCodes } }` filter below match by exact string.
+  // Normalizing again here is a cheap defensive no-op against that
+  // guarantee, not a substitute for it — it cannot rescue a non-canonical
+  // row the SQL filter already excluded from the result set.
+  const courseCodes = courses.map((c) => normalizeCourseCode(c.code));
   const matchingTextbooks = courseCodes.length
     ? await db.textbook.findMany({
         where: { status: "PUBLISHED", courseCode: { in: courseCodes } },
@@ -106,8 +115,9 @@ export default async function StudentPage() {
   // First-published-wins per course code (mirrors the old take: 1 per course).
   const textbookByCourseCode = new Map<string, (typeof matchingTextbooks)[number]>();
   for (const textbook of matchingTextbooks) {
-    if (textbook.courseCode && !textbookByCourseCode.has(textbook.courseCode)) {
-      textbookByCourseCode.set(textbook.courseCode, textbook);
+    const code = textbook.courseCode ? normalizeCourseCode(textbook.courseCode) : null;
+    if (code && !textbookByCourseCode.has(code)) {
+      textbookByCourseCode.set(code, textbook);
     }
   }
 
@@ -139,7 +149,7 @@ export default async function StudentPage() {
 
   const total = courses.length;
   const acquired = courses.filter((c) => {
-    const textbook = textbookByCourseCode.get(c.code);
+    const textbook = textbookByCourseCode.get(normalizeCourseCode(c.code));
     return textbook && ownedIds.has(textbook.id);
   }).length;
   const remaining = total - acquired;
@@ -181,7 +191,7 @@ export default async function StudentPage() {
         ) : (
           <div className="grid grid-cols-2 gap-x-6 gap-y-10 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
             {courses.map((course) => {
-              const textbook = textbookByCourseCode.get(course.code) ?? null;
+              const textbook = textbookByCourseCode.get(normalizeCourseCode(course.code)) ?? null;
               return (
                 <SemesterMaterialCard
                   key={course.id}

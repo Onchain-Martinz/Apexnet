@@ -3,6 +3,8 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { uploadToR2 } from "@/lib/storage/r2";
 import { captureException } from "@/lib/monitoring";
+import { normalizeCourseCode } from "@/lib/textbooks/course-code";
+import { isValidTextbookPrice } from "@/lib/validations/textbook";
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
 const MAX_COVER_SIZE = 5 * 1024 * 1024; // 5 MB
@@ -67,7 +69,7 @@ export async function POST(req: NextRequest) {
   const title = (formData.get("title") as string | null)?.trim() ?? "";
   const description = (formData.get("description") as string | null)?.trim() ?? "";
   const department = (formData.get("department") as string | null)?.trim() ?? "";
-  const courseCode = (formData.get("courseCode") as string | null)?.trim().toUpperCase() ?? "";
+  const courseCode = normalizeCourseCode((formData.get("courseCode") as string | null) ?? "");
   const levelRaw = formData.get("level") as string | null;
   const priceRaw = formData.get("price") as string | null;
   const file = formData.get("pdf") as File | null;
@@ -104,6 +106,12 @@ export async function POST(req: NextRequest) {
   const price = parseFloat(priceRaw ?? "");
   if (priceRaw === null || priceRaw === "" || isNaN(price) || price < 0) {
     return NextResponse.json({ error: "Price must be 0 or greater" }, { status: 422 });
+  }
+  if (!isValidTextbookPrice(price)) {
+    return NextResponse.json(
+      { error: "Price must be a whole Naira amount — Kobo is not supported" },
+      { status: 422 },
+    );
   }
 
   if (!file) {

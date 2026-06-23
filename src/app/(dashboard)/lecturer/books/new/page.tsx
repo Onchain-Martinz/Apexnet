@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { routes } from "@/config/routes";
 import { cn } from "@/lib/utils/cn";
+import { isValidTextbookPrice } from "@/lib/validations/textbook";
 
 // ── Constants ───────────────────────────────────────────────────────────────
 
@@ -318,6 +319,8 @@ function validate(fields: Fields, pdfFile: File | null): Errors {
     errs.price = "Price is required";
   } else if (isNaN(price) || price < 0) {
     errs.price = "Price must be 0 or greater";
+  } else if (!isValidTextbookPrice(price)) {
+    errs.price = "Price must be a whole Naira amount — Kobo is not supported";
   }
 
   if (!pdfFile) {
@@ -513,9 +516,9 @@ export default function NewTextbookPage() {
           label="Price (₦)"
           id="price"
           type="number"
-          inputMode="decimal"
+          inputMode="numeric"
           min="0"
-          step="0.01"
+          step="1"
           placeholder="0 for free"
           value={fields.price}
           onChange={(e) => setField("price", e.target.value)}
