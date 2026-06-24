@@ -12,6 +12,7 @@ interface SessionTokenUser {
   name: string | null;
   role: Role;
   emailVerifiedAt: Date | null;
+  mustChangePassword: boolean;
 }
 
 // Mints a NextAuth v5 JWT session token for `user`, optionally tagging it
@@ -29,6 +30,7 @@ export async function createSessionToken(
       name: user.name,
       role: user.role,
       emailVerifiedAt: user.emailVerifiedAt ? user.emailVerifiedAt.toISOString() : null,
+      mustChangePassword: user.mustChangePassword,
       impersonatorId: impersonator?.id,
       impersonatorRole: impersonator?.role,
     },

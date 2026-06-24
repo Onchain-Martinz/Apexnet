@@ -83,7 +83,21 @@ export const resetPasswordSchema = z
     path: ["confirmPassword"],
   });
 
+// Authenticated, in-session password change — no OTP. Identity is already
+// proven by the active session; this is not a substitute for the
+// unauthenticated forgot/reset-password OTP flow above.
+export const changePasswordSchema = z
+  .object({
+    newPassword: passwordSchema,
+    confirmPassword: z.string().min(1, "Please confirm your password"),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
+
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;

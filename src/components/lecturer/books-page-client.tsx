@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { X, BookOpen, Plus, BarChart3 } from "lucide-react";
+import { X, BookOpen, Plus, BarChart3, Pencil } from "lucide-react";
 import { routes } from "@/config/routes";
 import { coverUrl } from "@/lib/utils/cover-url";
 import { TextbookCard } from "@/components/textbooks/textbook-card";
@@ -62,7 +62,7 @@ const STATUS_STYLES: Record<BookItem["status"], string> = {
 const STATUS_LABELS: Record<BookItem["status"], string> = {
   PUBLISHED: "Published",
   DRAFT:     "Draft",
-  ARCHIVED:  "Archived",
+  ARCHIVED:  "Hidden",
 };
 
 function StatusPill({ status }: { status: BookItem["status"] }) {
@@ -340,6 +340,15 @@ function BookCard({
           className="flex h-8 flex-1 items-center justify-center rounded-[8px] bg-[#07132A] text-[11px] font-semibold text-white transition-all duration-150 active:scale-[0.97]"
         >
           Read
+        </Link>
+
+        {/* Edit — lecturer may edit their own textbook regardless of status */}
+        <Link
+          href={routes.lecturer.editTextbook(id)}
+          className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[8px] border border-[#E2E8F0] bg-white text-[#64748B] transition-all duration-150 active:scale-[0.97]"
+          aria-label="Edit Textbook"
+        >
+          <Pencil className="h-3.5 w-3.5" aria-hidden />
         </Link>
 
         {/* Draft: Publish button / Published+Archived: Metrics icon */}

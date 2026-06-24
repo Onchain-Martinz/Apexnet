@@ -7,6 +7,7 @@ declare module "next-auth" {
   interface User {
     role: Role;
     emailVerifiedAt: string | null;
+    mustChangePassword: boolean;
   }
 
   interface Session {
@@ -17,6 +18,7 @@ declare module "next-auth" {
       image?: string | null;
       role: Role;
       emailVerifiedAt: string | null;
+      mustChangePassword: boolean;
       // Present only while an admin is impersonating this user.
       impersonatorId?: string;
       impersonatorRole?: Role;
@@ -29,6 +31,7 @@ declare module "next-auth/jwt" {
     id: string;
     role: Role;
     emailVerifiedAt: string | null;
+    mustChangePassword: boolean;
     impersonatorId?: string;
     impersonatorRole?: Role;
   }

@@ -9,6 +9,13 @@ import { coverUrl } from "@/lib/utils/cover-url";
 import { BuyButton } from "@/components/textbooks/buy-button";
 import { ApexSeal, VerifiedLecturerBadge } from "@/components/ui/verification-badge";
 
+// Forces this route to be fully dynamic (no static/ISR caching). Needed for
+// notFound() to reliably commit an actual 404 status code rather than
+// rendering the not-found UI under a 200 — observed in this app whenever
+// notFound() was reached after an additional async DB call rather than as
+// the page's very first statement.
+export const dynamic = "force-dynamic";
+
 export default async function TextbookDetailsPage({
   params,
 }: {
@@ -41,16 +48,27 @@ export default async function TextbookDetailsPage({
   }
 
   const isOwner = textbook.lecturer.userId === session.user.id;
+  const isAdmin = session.user.role === "ADMIN";
   const isFree = textbook.isFree || Number(textbook.price) === 0;
   const coverSrc = coverUrl(textbook.id, textbook.coverImageKey);
 
-  const owned =
-    !isFree && !isOwner
-      ? await db.studentLibrary.findUnique({
-          where: { studentId_textbookId: { studentId: session.user.id, textbookId: textbook.id } },
-          select: { id: true },
-        })
-      : null;
+  const owned = !isOwner
+    ? await db.studentLibrary.findUnique({
+        where: { studentId_textbookId: { studentId: session.user.id, textbookId: textbook.id } },
+        select: { id: true },
+      })
+    : null;
+
+  // Hidden (ARCHIVED) and DRAFT textbooks are only visible to their owning
+  // lecturer, admins (for moderation), and students who already own them —
+  // so existing purchases/access never break when a textbook is hidden.
+  // Everyone else gets a clean 404, not a page that still shows the content
+  // minus a buy button (that was BUG #1 — the page rendered fully regardless
+  // of status, only the CTA was gated).
+  if (!isOwner && !isAdmin && !owned && textbook.status !== "PUBLISHED") {
+    notFound();
+  }
+
   const priceLabel = isFree
     ? "Free"
     : `₦${Number(textbook.price).toLocaleString("en-NG", { maximumFractionDigits: 0 })}`;
@@ -107,11 +125,10 @@ export default async function TextbookDetailsPage({
       )}
 
       <div className="space-y-element">
-        {!isOwner && textbook.status !== "PUBLISHED" ? (
-          <p className="text-[13px] text-muted-foreground">
-            This textbook is currently unavailable.
-          </p>
-        ) : !textbook.fileKey ? (
+        {/* The page-level gate above already gets a non-owner/non-admin/
+            non-owning viewer a 404 whenever the textbook isn't PUBLISHED,
+            so by this point the viewer is always entitled to be here. */}
+        {!textbook.fileKey ? (
           <p className="text-[13px] text-muted-foreground">
             No file has been uploaded for this textbook yet.
           </p>

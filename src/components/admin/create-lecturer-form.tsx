@@ -2,18 +2,25 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { Input } from "@/components/ui/input";
+import { Check, Copy } from "lucide-react";
+import { EmailInput, Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { routes } from "@/config/routes";
+
+interface CreatedLecturer {
+  name: string;
+  email: string;
+  temporaryPassword: string;
+}
 
 export function CreateLecturerForm() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [created, setCreated] = useState<CreatedLecturer | null>(null);
+  const [copied, setCopied] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -24,7 +31,7 @@ export function CreateLecturerForm() {
       const res = await fetch(routes.api.admin.lecturers, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, email }),
       });
 
       const data = await res.json();
@@ -34,11 +41,11 @@ export function CreateLecturerForm() {
         return;
       }
 
-      setSuccess(true);
-      setTimeout(() => {
-        router.push(routes.admin.lecturers);
-        router.refresh();
-      }, 800);
+      setCreated({
+        name: data.lecturer.name,
+        email: data.lecturer.email,
+        temporaryPassword: data.temporaryPassword,
+      });
     } catch {
       setError("Network error. Please try again.");
     } finally {
@@ -46,14 +53,68 @@ export function CreateLecturerForm() {
     }
   }
 
+  async function handleCopy() {
+    if (!created) return;
+    try {
+      await navigator.clipboard.writeText(created.temporaryPassword);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard API unavailable — admin can still select and copy the text manually.
+    }
+  }
+
+  if (created) {
+    return (
+      <div className="space-y-element">
+        <div className="rounded-input border border-success/30 bg-success/5 px-4 py-3">
+          <p className="text-[13px] text-success">Lecturer account created.</p>
+        </div>
+
+        <div className="space-y-3 rounded-input border border-card-border bg-card p-4">
+          <p className="text-[13px] text-muted-foreground">
+            Give these details to <span className="font-medium text-foreground">{created.name}</span>. This password
+            is shown only once — they&apos;ll be required to set their own on first login.
+          </p>
+
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">Email</p>
+            <p className="mt-0.5 text-[14px] font-medium text-foreground">{created.email}</p>
+          </div>
+
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">Temporary password</p>
+            <div className="mt-1 flex items-center justify-between gap-3">
+              <p className="font-mono text-[16px] font-semibold text-foreground">{created.temporaryPassword}</p>
+              <button
+                type="button"
+                onClick={handleCopy}
+                className="flex flex-shrink-0 items-center gap-1.5 rounded-button border border-border px-3 py-1.5 text-[12px] font-medium text-foreground transition-colors hover:bg-muted"
+              >
+                {copied ? <Check className="h-3.5 w-3.5" aria-hidden /> : <Copy className="h-3.5 w-3.5" aria-hidden />}
+                {copied ? "Copied" : "Copy"}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <Button
+          type="button"
+          size="lg"
+          className="w-full"
+          onClick={() => {
+            router.push(routes.admin.lecturers);
+            router.refresh();
+          }}
+        >
+          Done
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-element">
-      {success && (
-        <div className="rounded-input border border-success/30 bg-success/5 px-4 py-3">
-          <p className="text-[13px] text-success">Lecturer account created. Redirecting…</p>
-        </div>
-      )}
-
       <Input
         label="Name"
         id="name"
@@ -64,24 +125,12 @@ export function CreateLecturerForm() {
         required
       />
 
-      <Input
+      <EmailInput
         label="Email"
         id="email"
-        type="email"
         placeholder="lecturer@university.edu"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
-        disabled={saving}
-        required
-      />
-
-      <Input
-        label="Password"
-        id="password"
-        type="password"
-        placeholder="At least 8 characters"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
         disabled={saving}
         required
       />

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
-import { Input } from "@/components/ui/input";
+import { EmailInput, Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import { adminProfileSchema } from "@/lib/validations/admin";
@@ -204,10 +204,9 @@ export function AdminProfilePanel() {
           disabled={saving}
         />
 
-        <Input
+        <EmailInput
           label="Email"
           id="email"
-          type="email"
           value={draft.email}
           onChange={(e) => setField("email", e.target.value)}
           error={fieldErrors.email}

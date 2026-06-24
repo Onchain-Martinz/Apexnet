@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { initiateTransfer } from "@/lib/flutterwave";
+import { getAvailableBalance, initiateTransfer } from "@/lib/flutterwave";
 import { WITHDRAWAL_SELECT_FIELDS as SELECT_FIELDS } from "@/lib/withdrawals/select";
 import type { Prisma } from "@prisma/client";
 import { captureException } from "@/lib/monitoring";
+import { computeLecturerPayoutBalances } from "@/lib/payouts/settlement";
 
 // ── POST /api/admin/withdrawals/[id]/retry ──────────────────────────────────
 // Retries a FAILED withdrawal by initiating a new Flutterwave transfer with a
@@ -41,6 +42,7 @@ export async function POST(
     where: { id },
     select: {
       id: true,
+      lecturerId: true,
       amount: true,
       status: true,
       retryCount: true,
@@ -73,6 +75,42 @@ export async function POST(
   if (!withdrawal.lecturer.bankAccountVerifiedAt) {
     return NextResponse.json(
       { error: "Lecturer's bank account has not been verified" },
+      { status: 422 },
+    );
+  }
+
+  const amountNaira = Number(withdrawal.amount);
+  const payoutBalances = await computeLecturerPayoutBalances(db, withdrawal.lecturerId, {
+    excludeRequestId: withdrawal.id,
+  });
+
+  if (amountNaira > payoutBalances.availableNextPayout) {
+    return NextResponse.json(
+      { error: "This payout request exceeds the lecturer's settled eligible amount" },
+      { status: 422 },
+    );
+  }
+
+  let flutterwaveBalance: Awaited<ReturnType<typeof getAvailableBalance>>;
+  try {
+    flutterwaveBalance = await getAvailableBalance("NGN");
+  } catch (error) {
+    captureException(error, {
+      userId: session.user.id,
+      withdrawalId: id,
+      extra: { amountNaira },
+    });
+    return NextResponse.json(
+      { error: "Could not confirm Flutterwave available balance. Payout remains retryable." },
+      { status: 502 },
+    );
+  }
+
+  if (flutterwaveBalance.availableBalance < amountNaira) {
+    return NextResponse.json(
+      {
+        error: `Insufficient Flutterwave available balance. Available: ₦${flutterwaveBalance.availableBalance.toLocaleString("en-NG")}`,
+      },
       { status: 422 },
     );
   }
@@ -113,7 +151,7 @@ export async function POST(
 
   try {
     const transfer = await initiateTransfer({
-      amountNaira: Number(withdrawal.amount),
+      amountNaira,
       accountNumber: withdrawal.lecturer.bankAccountNumber,
       bankCode: withdrawal.lecturer.bankCode,
       accountName:

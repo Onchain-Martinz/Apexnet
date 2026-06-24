@@ -36,8 +36,22 @@ export default auth((req) => {
     return NextResponse.redirect(loginUrl);
   }
 
-  // Unverified user → hard-gate to /verify-email until they verify their email
-  if (isLoggedIn && !session?.user?.emailVerifiedAt && path !== VERIFY_EMAIL_PAGE) {
+  // Unverified user → hard-gate to /verify-email until they verify their
+  // email. Deferred entirely while a forced password change is pending
+  // (mustChangePassword) — the dashboard loads with a blocking client-side
+  // modal instead (see (dashboard)/layout.tsx); verification is prompted
+  // only after the password has been changed. Also suppressed while an
+  // admin is impersonating (impersonatorId set) — this reflects the target
+  // lecturer's real pending-verification state, not the admin's own, and
+  // would otherwise redirect the admin's impersonated session away from the
+  // dashboard mid-onboarding. Real lecturer-owned sessions are unaffected.
+  if (
+    isLoggedIn &&
+    !session?.user?.mustChangePassword &&
+    !session?.user?.emailVerifiedAt &&
+    !session?.user?.impersonatorId &&
+    path !== VERIFY_EMAIL_PAGE
+  ) {
     return NextResponse.redirect(new URL(VERIFY_EMAIL_PAGE, req.url));
   }
 

@@ -136,11 +136,65 @@ export async function POST(req: NextRequest) {
   // ── Lookup lecturer profile ─────────────────────────────────────────────
   const lecturerProfile = await db.lecturerProfile.findUnique({
     where: { userId: session.user.id },
-    select: { id: true, verified: true },
+    select: { id: true, verified: true, universityId: true },
   });
 
   if (!lecturerProfile) {
     return NextResponse.json({ error: "Lecturer profile not found" }, { status: 404 });
+  }
+
+  // ── Resolve department (find-or-create) ─────────────────────────────────
+  // The lecturer's typed department must always be persisted as a real
+  // departmentId — previously it was validated as required input and then
+  // discarded, leaving Textbook.departmentId null unless courseCode happened
+  // to match a seeded Course (which only exists for the Psychology pilot
+  // catalogue).
+  //
+  // When the lecturer's own university is unknown (the common case for
+  // admin-created accounts), prefer reusing an existing department with the
+  // same name across ANY university over guessing a fallback university —
+  // guessing produced two divergent "Sociology" rows in practice (one
+  // arbitrarily scoped to the oldest University row in the table, unrelated
+  // to this pilot, while the actual students' department lived under a
+  // different one) and silently excluded an otherwise-matching textbook from
+  // "Recommended For Your Department". Only fall back to creating a new
+  // department under the platform's first university record when no
+  // existing department with this name exists anywhere — still a
+  // single-pilot-university simplification for that one remaining case, not
+  // general multi-university resolution.
+  let departmentId: string | null = null;
+  if (lecturerProfile.universityId) {
+    const resolvedDepartment =
+      (await db.department.findFirst({
+        where: { universityId: lecturerProfile.universityId, name: { equals: department, mode: "insensitive" } },
+        select: { id: true },
+      })) ??
+      (await db.department.create({
+        data: { universityId: lecturerProfile.universityId, name: department },
+        select: { id: true },
+      }));
+    departmentId = resolvedDepartment.id;
+  } else {
+    const existingByName = await db.department.findFirst({
+      where: { name: { equals: department, mode: "insensitive" } },
+      select: { id: true },
+    });
+
+    if (existingByName) {
+      departmentId = existingByName.id;
+    } else {
+      const fallbackUniversity = await db.university.findFirst({
+        orderBy: { createdAt: "asc" },
+        select: { id: true },
+      });
+      if (fallbackUniversity) {
+        const created = await db.department.create({
+          data: { universityId: fallbackUniversity.id, name: department },
+          select: { id: true },
+        });
+        departmentId = created.id;
+      }
+    }
   }
 
   // ── Upload PDF to R2 ───────────────────────────────────────────────────
@@ -186,7 +240,8 @@ export async function POST(req: NextRequest) {
       status: isVerified ? "PUBLISHED" : "DRAFT",
       publishedAt: isVerified ? now : null,
       courseCode,
-      ...(matchedCourse ? { courseId: matchedCourse.id, departmentId: matchedCourse.departmentId } : {}),
+      departmentId,
+      ...(matchedCourse ? { courseId: matchedCourse.id } : {}),
     },
     select: { id: true },
   });

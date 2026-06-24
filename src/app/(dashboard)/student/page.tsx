@@ -6,11 +6,14 @@ import { routes } from "@/config/routes";
 import { getTimeOfDayGreeting } from "@/lib/utils/format";
 import { getMaterialStatus, semesterMaterialSelect, courseTextbookSelect } from "@/lib/textbooks/semester-materials";
 import { normalizeCourseCode } from "@/lib/textbooks/course-code";
+import { textbookCardSelect } from "@/lib/textbooks/discover";
 import { SemesterOverviewCard } from "@/components/textbooks/semester-overview-card";
 import { SemesterMaterialCard } from "@/components/textbooks/semester-material-card";
 import { RecentMaterialCard } from "@/components/textbooks/recent-material-card";
+import { TextbookCard } from "@/components/textbooks/textbook-card";
 
 const RECENT_COUNT = 5;
+const RECOMMENDED_COUNT = 50;
 const PILOT_SEMESTER = 2; // Psychology pilot: second-semester courses only
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -51,16 +54,16 @@ function IncompleteProfilePrompt() {
   );
 }
 
-function EmptySemesterMaterials() {
+function EmptyRecommended() {
   return (
     <div className="flex flex-col items-center gap-3 rounded-card border border-card-border bg-card px-6 py-10 text-center shadow-card">
       <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
         <BookOpen className="h-7 w-7 text-muted-foreground" aria-hidden />
       </div>
       <div className="space-y-1">
-        <p className="text-[15px] font-semibold text-foreground">No materials yet</p>
+        <p className="text-[15px] font-semibold text-foreground">No textbooks yet</p>
         <p className="text-[13px] text-muted-foreground">
-          No courses found for your department and level yet
+          Check back soon — lecturers in your department are publishing new materials
         </p>
       </div>
     </div>
@@ -81,6 +84,10 @@ export default async function StudentPage() {
 
   const hasProgram = Boolean(profile?.departmentId && profile?.level);
 
+  // Course data only exists for departments with a seeded curriculum
+  // (currently just the Psychology pilot). Departments without one fall
+  // back to a flat, newest-first "Recommended For Your Department" feed
+  // further down instead of a dead-end "no courses found" message.
   const courses = hasProgram
     ? await db.course.findMany({
         where: {
@@ -134,7 +141,13 @@ export default async function StudentPage() {
     : [];
   const ownedIds = new Set(ownedRows.map((r) => r.textbookId));
 
-  const recentlyAdded = hasProgram
+  const hasCurriculum = courses.length > 0;
+
+  // Only meaningful alongside a seeded curriculum — it's the "anything else
+  // published in your department" supplement to Semester Materials. For
+  // departments with no curriculum, recommendedForDepartment below covers
+  // the same ground as the primary section, so this would just duplicate it.
+  const recentlyAdded = hasProgram && hasCurriculum
     ? await db.textbook.findMany({
         where: {
           status: "PUBLISHED",
@@ -144,6 +157,19 @@ export default async function StudentPage() {
         orderBy: { createdAt: "desc" },
         take: RECENT_COUNT,
         select: semesterMaterialSelect,
+      })
+    : [];
+
+  // No curriculum for this department/level — recommend straight from
+  // Textbook.departmentId instead, newest first. This is what lets a
+  // newly-onboarded department's students discover textbooks without any
+  // Course rows ever being seeded.
+  const recommendedForDepartment = hasProgram && !hasCurriculum
+    ? await db.textbook.findMany({
+        where: { status: "PUBLISHED", departmentId: profile!.departmentId! },
+        orderBy: { createdAt: "desc" },
+        take: RECOMMENDED_COUNT,
+        select: textbookCardSelect,
       })
     : [];
 
@@ -177,18 +203,16 @@ export default async function StudentPage() {
       </header>
 
       {/* ── Semester overview ──────────────────────── */}
-      {hasProgram && <SemesterOverviewCard total={total} acquired={acquired} remaining={remaining} />}
+      {hasProgram && hasCurriculum && <SemesterOverviewCard total={total} acquired={acquired} remaining={remaining} />}
 
-      {/* ── Semester materials ─────────────────────── */}
+      {/* ── Semester materials / Recommended For Your Department ────────── */}
       <section>
         <h2 className="mb-4 text-[18px] font-bold text-foreground">
-          Your Semester Materials
+          {hasCurriculum || !hasProgram ? "Your Semester Materials" : "Recommended For Your Department"}
         </h2>
         {!hasProgram ? (
           <IncompleteProfilePrompt />
-        ) : courses.length === 0 ? (
-          <EmptySemesterMaterials />
-        ) : (
+        ) : hasCurriculum ? (
           <div className="grid grid-cols-2 gap-x-6 gap-y-10 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
             {courses.map((course) => {
               const textbook = textbookByCourseCode.get(normalizeCourseCode(course.code)) ?? null;
@@ -202,6 +226,14 @@ export default async function StudentPage() {
                 />
               );
             })}
+          </div>
+        ) : recommendedForDepartment.length === 0 ? (
+          <EmptyRecommended />
+        ) : (
+          <div className="grid grid-cols-2 gap-x-6 gap-y-10 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+            {recommendedForDepartment.map((textbook) => (
+              <TextbookCard key={textbook.id} textbook={{ ...textbook, price: Number(textbook.price) }} />
+            ))}
           </div>
         )}
       </section>

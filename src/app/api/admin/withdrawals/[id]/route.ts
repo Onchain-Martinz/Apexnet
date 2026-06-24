@@ -1,29 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { initiateTransfer } from "@/lib/flutterwave";
 import { WITHDRAWAL_SELECT_FIELDS as SELECT_FIELDS } from "@/lib/withdrawals/select";
-import { captureException } from "@/lib/monitoring";
+import { computeLecturerPayoutBalances } from "@/lib/payouts/settlement";
 
 // ── PATCH /api/admin/withdrawals/[id] ───────────────────────────────────────
-// Approves (triggers an automated Flutterwave transfer) or rejects a pending
-// withdrawal request.
+// Approves, rejects, or marks a withdrawal request as paid.
 //
-// Transaction safety (preserved from Paystack implementation):
-//  - The DB row is atomically claimed with updateMany(PENDING → PROCESSING)
-//    BEFORE calling Flutterwave. If another request already moved the row out
-//    of PENDING, count === 0 and we bail — no double-transfer.
-//  - On Flutterwave API failure we revert the claim (PROCESSING → PENDING)
-//    so the withdrawal remains actionable.
+// Pilot manual-payout workflow — no automated transfer is initiated by this
+// app. The admin reviews and approves in-app, then carries out the actual
+// bank transfer manually outside the app (Flutterwave's dashboard or direct
+// bank transfer), then marks the request Paid once the money has moved:
 //
-// Admin approval workflow:
-//  PENDING  → (admin APPROVED) → PROCESSING → (webhook transfer.completed) → PAID
-//  PENDING  → (admin REJECTED) → REJECTED
-//  PROCESSING → (webhook transfer.failed)  → FAILED
+//  PENDING → (admin APPROVED) → APPROVED → (admin marks Paid) → PAID
+//  PENDING → (admin REJECTED) → REJECTED
 //
-// Flutterwave difference: no pre-created transfer recipient. Bank details
-// (bankAccountNumber, bankCode, bankAccountName) are passed directly.
-// Amount is in Naira (not kobo — Flutterwave uses the base currency unit).
+// Automated transfer initiation (initiateTransfer/getAvailableBalance) was
+// removed from this route — Flutterwave transfer/IP-whitelist restrictions
+// made it unreliable for pilot launch. See WithdrawalRequest.transferCode/
+// transferReference/failureReason/retryCount — still present in the schema,
+// now unused by this route, kept for any pre-existing rows and in case
+// automated transfers return post-pilot.
 
 export async function PATCH(
   req: NextRequest,
@@ -47,8 +44,8 @@ export async function PATCH(
   }
 
   const status = (body as { status?: unknown }).status;
-  if (status !== "APPROVED" && status !== "REJECTED") {
-    return NextResponse.json({ error: "Status must be APPROVED or REJECTED" }, { status: 422 });
+  if (status !== "APPROVED" && status !== "REJECTED" && status !== "PAID") {
+    return NextResponse.json({ error: "Status must be APPROVED, REJECTED, or PAID" }, { status: 422 });
   }
 
   // ── REJECTED path ────────────────────────────────────────────────────────
@@ -74,12 +71,36 @@ export async function PATCH(
     return NextResponse.json({ success: true, withdrawal: updated });
   }
 
-  // ── APPROVED path — initiate an automated payout ─────────────────────────
+  // ── PAID path — admin has completed the manual bank transfer ─────────────
+  if (status === "PAID") {
+    const withdrawal = await db.withdrawalRequest.findUnique({
+      where: { id },
+      select: { status: true },
+    });
+
+    if (!withdrawal) {
+      return NextResponse.json({ error: "Withdrawal request not found" }, { status: 404 });
+    }
+    if (withdrawal.status !== "APPROVED") {
+      return NextResponse.json({ error: "Only approved requests can be marked as paid" }, { status: 422 });
+    }
+
+    const updated = await db.withdrawalRequest.update({
+      where: { id },
+      data: { status: "PAID", paidAt: new Date() },
+      select: SELECT_FIELDS,
+    });
+
+    return NextResponse.json({ success: true, withdrawal: updated });
+  }
+
+  // ── APPROVED path — validate and approve for manual payout ───────────────
 
   const withdrawal = await db.withdrawalRequest.findUnique({
     where: { id },
     select: {
       id: true,
+      lecturerId: true,
       amount: true,
       status: true,
       lecturer: {
@@ -112,51 +133,29 @@ export async function PATCH(
     );
   }
 
-  const transferReference = `WD_${withdrawal.id}`;
+  const payoutBalances = await computeLecturerPayoutBalances(db, withdrawal.lecturerId, {
+    excludeRequestId: withdrawal.id,
+  });
+  const amountNaira = Number(withdrawal.amount);
 
-  // Atomically claim the withdrawal before calling Flutterwave. If another
-  // request already moved it out of PENDING (e.g. a double-click), this
-  // updates zero rows and we bail without initiating a second transfer.
+  if (amountNaira > payoutBalances.availableNextPayout) {
+    return NextResponse.json(
+      { error: "This payout request exceeds the lecturer's settled eligible amount" },
+      { status: 422 },
+    );
+  }
+
+  // Atomically claim the withdrawal. If another request already moved it out
+  // of PENDING (e.g. a double-click), this updates zero rows.
   const claimed = await db.withdrawalRequest.updateMany({
     where: { id, status: "PENDING" },
-    data: { status: "PROCESSING", transferReference, reviewedAt: new Date() },
+    data: { status: "APPROVED", reviewedAt: new Date() },
   });
 
   if (claimed.count === 0) {
     return NextResponse.json({ error: "This request has already been reviewed" }, { status: 422 });
   }
 
-  try {
-    const transfer = await initiateTransfer({
-      amountNaira: Number(withdrawal.amount),
-      accountNumber: withdrawal.lecturer.bankAccountNumber,
-      bankCode: withdrawal.lecturer.bankCode,
-      accountName: withdrawal.lecturer.bankAccountName ?? withdrawal.lecturer.bankAccountNumber,
-      narration: `Apex lecturer payout — withdrawal ${withdrawal.id}`,
-      reference: transferReference,
-    });
-
-    const updated = await db.withdrawalRequest.update({
-      where: { id },
-      data: { transferCode: transfer.transferId },
-      select: SELECT_FIELDS,
-    });
-
-    return NextResponse.json({ success: true, withdrawal: updated });
-  } catch (error) {
-    // Flutterwave rejected the transfer — revert the claim so the withdrawal
-    // stays PENDING and actionable.
-    await db.withdrawalRequest.update({
-      where: { id },
-      data: { status: "PENDING", transferReference: null, reviewedAt: null },
-    });
-
-    const message = error instanceof Error ? error.message : "Failed to initiate transfer";
-    captureException(error, {
-      userId: session.user.id,
-      withdrawalId: id,
-      extra: { transferReference, amountNaira: Number(withdrawal.amount) },
-    });
-    return NextResponse.json({ error: message }, { status: 502 });
-  }
+  const updated = await db.withdrawalRequest.findUnique({ where: { id }, select: SELECT_FIELDS });
+  return NextResponse.json({ success: true, withdrawal: updated });
 }

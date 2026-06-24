@@ -11,6 +11,7 @@ import { StatCards } from "@/components/lecturer/stat-cards";
 import type { BookData, SalesSummaryData } from "@/components/lecturer/stat-cards";
 import { LECTURER_SHARE_RATE } from "@/lib/constants";
 import { roundCurrency } from "@/lib/utils/format";
+import { computeLecturerPayoutBalances } from "@/lib/payouts/settlement";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -73,9 +74,14 @@ export default async function LecturerPage() {
   if (lecturerProfile) {
     const lecturerId = lecturerProfile.id;
 
-    // db.$transaction([...]) instead of Promise.all: pins these 7 reads to a
-    // single pooled connection instead of checking out 7 concurrently — this
-    // page alone exceeded Neon's connection_limit=5 on a single visit.
+    // db.$transaction([...]) — batch form, not the interactive callback form:
+    // pins these 7 reads to a single pooled connection instead of checking
+    // out 7 concurrently — this page alone exceeded Neon's connection_limit
+    // on a single visit. The interactive callback form was tried here and
+    // caused "Transaction already closed" errors (its 5000ms wall-clock
+    // default), so computeLecturerPayoutBalances runs as its own standalone
+    // query below, outside the transaction — it's one round trip and doesn't
+    // need to be pinned with the rest.
     const [published, drafts, sales, revenueAgg, textbooks, purchases, withdrawals] =
       await db.$transaction([
         db.textbook.count({ where: { lecturerId, status: "PUBLISHED" } }),
@@ -108,20 +114,13 @@ export default async function LecturerPage() {
           select: { amount: true, status: true, createdAt: true, reviewedAt: true },
         }),
       ]);
+    const payoutBalances = await computeLecturerPayoutBalances(db, lecturerId);
 
     publishedCount = published;
     draftCount = drafts;
     salesCount = sales;
 
-    const totalEarnings = roundCurrency(
-      Number(revenueAgg._sum.amount ?? 0) * LECTURER_SHARE_RATE,
-    );
-    const reserved = roundCurrency(
-      withdrawals
-        .filter((w) => w.status !== "REJECTED" && w.status !== "FAILED")
-        .reduce((sum, w) => sum + Number(w.amount), 0),
-    );
-    availableBalance = roundCurrency(Math.max(0, totalEarnings - reserved));
+    availableBalance = payoutBalances.availableNextPayout;
 
     // ── Build activity feed ──────────────────────────────────────────────────
     for (const book of textbooks) {
@@ -162,7 +161,7 @@ export default async function LecturerPage() {
 
       activity.push({
         type: "withdrawal_submitted",
-        label: "Withdrawal requested",
+        label: "Payout requested",
         detail: amountLabel,
         date: withdrawal.createdAt,
         pill: { text: "Pending", variant: "neutral" },
@@ -172,7 +171,7 @@ export default async function LecturerPage() {
         if (withdrawal.status === "APPROVED" || withdrawal.status === "PAID") {
           activity.push({
             type: "withdrawal_approved",
-            label: "Withdrawal approved",
+            label: "Payout approved",
             detail: amountLabel,
             date: withdrawal.reviewedAt,
             pill: { text: "Approved", variant: "success" },
@@ -181,7 +180,7 @@ export default async function LecturerPage() {
         if (withdrawal.status === "REJECTED") {
           activity.push({
             type: "withdrawal_rejected",
-            label: "Withdrawal rejected",
+            label: "Payout rejected",
             detail: amountLabel,
             date: withdrawal.reviewedAt,
             pill: { text: "Rejected", variant: "destructive" },
@@ -265,7 +264,10 @@ export default async function LecturerPage() {
       </header>
 
       {/* ── Section 2: Balance Card (hero) ────────────────────────────────── */}
-      <BalanceCard availableBalance={availableBalance} bankDetails={bankDetails} />
+      <BalanceCard
+        availableBalance={availableBalance}
+        bankDetails={bankDetails}
+      />
 
       {/* ── Section 3: Stats ──────────────────────────────────────────────── */}
       <section className="mt-8">

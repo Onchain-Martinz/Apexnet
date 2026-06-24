@@ -1,8 +1,9 @@
 "use client";
 
 import { forwardRef, useState } from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { Check, Eye, EyeOff, X } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
+import { isValidEmailFormat } from "@/lib/utils/email";
 
 // ── Base Input ──────────────────────────────────────────────────────────────
 
@@ -108,3 +109,64 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
 );
 
 PasswordInput.displayName = "PasswordInput";
+
+// ── Email Input (live format validation) ───────────────────────────────────
+// Client-side format check only — no DB call, no existence check. Shows a
+// green check / red X once the field is non-empty.
+
+export type EmailInputProps = Omit<InputProps, "type">;
+
+export const EmailInput = forwardRef<HTMLInputElement, EmailInputProps>(
+  ({ className, label, error, hint, id, value, ...props }, ref) => {
+    const inputId = id ?? "email";
+    const stringValue = typeof value === "string" ? value : "";
+    const showIndicator = stringValue.length > 0;
+    const valid = isValidEmailFormat(stringValue);
+
+    return (
+      <div className="flex flex-col gap-1.5">
+        {label && (
+          <label htmlFor={inputId} className="text-[13px] font-medium text-foreground">
+            {label}
+          </label>
+        )}
+        <div className="relative">
+          <input
+            ref={ref}
+            id={inputId}
+            type="email"
+            value={value}
+            className={cn(
+              "h-12 w-full rounded-input border bg-background px-4 pr-11",
+              "text-[16px] sm:text-[15px] text-foreground placeholder:text-muted-foreground",
+              "transition-all duration-150",
+              "focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-foreground",
+              error
+                ? "border-destructive focus:ring-destructive/20 focus:border-destructive"
+                : "border-border",
+              className
+            )}
+            {...props}
+          />
+          {showIndicator && (
+            <span className="absolute right-3.5 top-1/2 -translate-y-1/2" aria-hidden>
+              {valid ? (
+                <Check className="h-4 w-4 text-success" />
+              ) : (
+                <X className="h-4 w-4 text-destructive" />
+              )}
+            </span>
+          )}
+        </div>
+        {error && (
+          <p className="text-caption text-destructive" role="alert">{error}</p>
+        )}
+        {hint && !error && (
+          <p className="text-caption text-muted-foreground">{hint}</p>
+        )}
+      </div>
+    );
+  }
+);
+
+EmailInput.displayName = "EmailInput";

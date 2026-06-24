@@ -9,6 +9,8 @@ export const routes = {
   forgotPassword: "/forgot-password",
   resetPassword: "/reset-password",
   verifyEmail: "/verify-email",
+  privacy: "/privacy",
+  terms: "/terms",
 
   // Shared
   textbook: (id: string) => `/textbooks/${id}`,
@@ -58,6 +60,7 @@ export const routes = {
   api: {
     auth: "/api/auth",
     books: "/api/books",
+    book: (id: string) => `/api/books/${id}`,
     users: "/api/users",
     textbooks: "/api/textbooks",
     library: "/api/library",

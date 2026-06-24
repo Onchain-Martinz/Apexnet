@@ -126,7 +126,7 @@ export function BankVerificationPanel({ initial }: { initial: BankVerificationDa
     return (
       <section className="space-y-element rounded-card border border-card-border bg-card p-card shadow-card">
         <div className="flex items-center justify-between">
-          <p className="text-[13px] text-muted-foreground">Withdrawal Account</p>
+          <p className="text-[13px] text-muted-foreground">Payout Account</p>
           <span className="inline-flex items-center gap-1.5 rounded-full bg-success/10 px-2.5 py-1 text-[12px] font-semibold text-success">
             <Check className="h-3 w-3" strokeWidth={3} aria-hidden />
             Verified
@@ -151,7 +151,7 @@ export function BankVerificationPanel({ initial }: { initial: BankVerificationDa
   return (
     <section className="space-y-element rounded-card border border-card-border bg-card p-card shadow-card">
       <div className="flex items-center justify-between">
-        <p className="text-[13px] text-muted-foreground">Withdrawal Account</p>
+        <p className="text-[13px] text-muted-foreground">Payout Account</p>
         <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-1 text-[12px] font-semibold text-muted-foreground">
           Not Configured
         </span>

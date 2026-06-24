@@ -3,7 +3,9 @@ import { db } from "@/lib/db";
 import { Wallet } from "lucide-react";
 import { WithdrawalActions } from "@/components/admin/withdrawal-actions";
 import { WithdrawalRetryButton } from "@/components/admin/withdrawal-retry-button";
+import { MarkPaidButton } from "@/components/admin/mark-paid-button";
 import type { WithdrawalStatus } from "@prisma/client";
+import { computeLecturerPayoutBalances } from "@/lib/payouts/settlement";
 
 const naira = (amount: number) => `₦${amount.toLocaleString("en-NG")}`;
 
@@ -49,9 +51,9 @@ function EmptyWithdrawals() {
         <Wallet className="h-7 w-7 text-muted-foreground" aria-hidden />
       </div>
       <div className="space-y-1">
-        <p className="text-[15px] font-semibold text-foreground">No withdrawal requests</p>
+        <p className="text-[15px] font-semibold text-foreground">No payout requests</p>
         <p className="text-[13px] text-muted-foreground">
-          Lecturer withdrawal requests will show up here for review
+          Lecturer payout queue requests will show up here for review
         </p>
       </div>
     </div>
@@ -68,6 +70,7 @@ export default async function AdminWithdrawalsPage() {
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
+      lecturerId: true,
       amount: true,
       status: true,
       createdAt: true,
@@ -77,26 +80,48 @@ export default async function AdminWithdrawalsPage() {
       lecturer: {
         select: {
           user: { select: { name: true, email: true } },
+          bankName: true,
+          bankAccountNumber: true,
+          bankAccountName: true,
+          bankAccountVerifiedAt: true,
         },
       },
     },
   });
 
+  // Each row's balance check is a single standalone query — there's nothing
+  // else to pin it to, so no transaction wrapper is used here (the
+  // interactive callback form previously used caused "transaction closed"
+  // errors under load). See lecturer/page.tsx and lecturer/earnings/page.tsx
+  // for the pattern used where there are multiple reads worth pinning.
+  const queue = await Promise.all(
+    withdrawals.map(async (w) => {
+      const balances = await computeLecturerPayoutBalances(db, w.lecturerId, {
+        excludeRequestId: w.id,
+      });
+      return {
+        ...w,
+        eligibleAmount: Math.min(Number(w.amount), balances.availableNextPayout),
+        lastPayoutDate: balances.lastPayoutDate,
+      };
+    }),
+  );
+
   return (
     <div className="px-page pt-12 pb-6 space-y-section max-w-lg mx-auto">
       <header>
         <p className="text-[13px] font-medium text-muted-foreground">Apex · Admin</p>
-        <h1 className="mt-0.5 text-title font-bold text-foreground">Withdrawal Requests</h1>
+        <h1 className="mt-0.5 text-title font-bold text-foreground">Payout Queue</h1>
         <p className="mt-1 text-[13px] text-muted-foreground">
-          Review lecturer withdrawal requests. Approved transfers are processed manually.
+          Process lecturer payout requests using settled earnings only.
         </p>
       </header>
 
-      {withdrawals.length === 0 ? (
+      {queue.length === 0 ? (
         <EmptyWithdrawals />
       ) : (
         <div className="space-y-element">
-          {withdrawals.map((w) => (
+          {queue.map((w) => (
             <div
               key={w.id}
               className="space-y-3 rounded-card border border-card-border bg-card p-card shadow-card"
@@ -117,17 +142,43 @@ export default async function AdminWithdrawalsPage() {
                       day: "numeric",
                     })}
                   </p>
+                  <p className="text-[12px] text-muted-foreground">
+                    Last payout:{" "}
+                    {w.lastPayoutDate
+                      ? w.lastPayoutDate.toLocaleDateString("en-NG", {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                        })
+                      : "None"}
+                  </p>
                 </div>
                 <div className="flex-shrink-0 text-right">
                   <p className="text-[18px] font-bold text-foreground">
-                    {naira(Number(w.amount))}
+                    {naira(w.eligibleAmount)}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">
+                    eligible of {naira(Number(w.amount))}
                   </p>
                   <div className="mt-1">
                     <StatusBadge status={w.status} />
                   </div>
                 </div>
               </div>
+              <div className="rounded-card border border-card-border bg-muted/30 p-3">
+                <p className="text-[12px] font-medium text-muted-foreground">Bank Details</p>
+                <p className="mt-1 text-[13px] font-semibold text-foreground">
+                  {w.lecturer.bankAccountName ?? "No account name"}
+                </p>
+                <p className="text-[12px] text-muted-foreground">
+                  {w.lecturer.bankName ?? "No bank"} · {w.lecturer.bankAccountNumber ?? "No account number"}
+                </p>
+                {!w.lecturer.bankAccountVerifiedAt && (
+                  <p className="mt-1 text-[12px] text-destructive">Bank account is not verified.</p>
+                )}
+              </div>
               {w.status === "PENDING" && <WithdrawalActions id={w.id} />}
+              {w.status === "APPROVED" && <MarkPaidButton id={w.id} />}
               {w.status === "FAILED" && (
                 <div className="space-y-2">
                   {w.failureReason && (

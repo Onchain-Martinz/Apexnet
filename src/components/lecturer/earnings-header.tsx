@@ -24,7 +24,7 @@ export function EarningsHeader({ earnings, availableBalance, bankDetails }: Earn
       <div className="flex items-start justify-between gap-4">
         <p className="text-[13px] text-muted-foreground">Your Earnings</p>
         <Button size="sm" onClick={() => setOpen(true)}>
-          Withdraw
+          Request Payout
         </Button>
       </div>
       <p className="text-[32px] font-bold leading-tight text-foreground">
@@ -34,7 +34,7 @@ export function EarningsHeader({ earnings, availableBalance, bankDetails }: Earn
         Net earnings after Apex platform fee (8.5%).
       </p>
       <p className="mt-2 text-[13px] text-muted-foreground">
-        Available Balance <span className="font-semibold text-foreground">{naira(availableBalance)}</span>
+        Available Next Payout <span className="font-semibold text-foreground">{naira(availableBalance)}</span>
       </p>
 
       <WithdrawalModal

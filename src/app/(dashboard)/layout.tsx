@@ -1,5 +1,6 @@
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { ImpersonationBanner } from "@/components/admin/impersonation-banner";
+import { ForcedPasswordChangeModal } from "@/components/auth/forced-password-change-modal";
 import { getSession } from "@/lib/auth/session";
 
 /*
@@ -14,6 +15,11 @@ export default async function DashboardLayout({
 }) {
   const session = await getSession();
   const isImpersonating = Boolean(session?.user?.impersonatorId);
+  // Suppressed while an admin is impersonating — this reflects the target
+  // lecturer's real (pending) state, not the admin's own, and would
+  // otherwise block the admin mid-onboarding. Real lecturer-owned sessions
+  // (impersonatorId unset) are completely unaffected by this condition.
+  const mustChangePassword = Boolean(session?.user?.mustChangePassword) && !isImpersonating;
 
   return (
     <div className="min-h-dvh bg-background">
@@ -25,6 +31,8 @@ export default async function DashboardLayout({
       </main>
 
       <BottomNav />
+
+      {mustChangePassword && <ForcedPasswordChangeModal />}
     </div>
   );
 }

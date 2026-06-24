@@ -1,12 +1,36 @@
 import { NextRequest, NextResponse } from "next/server";
+import { randomInt } from "crypto";
 import bcrypt from "bcryptjs";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { createLecturerSchema } from "@/lib/validations/admin";
 
 // ── POST /api/admin/lecturers ───────────────────────────────────────────────
-// Founder-operated lecturer onboarding — creates a verified lecturer account
-// directly, replacing the public signup flow for this purpose.
+// Founder-operated lecturer onboarding — creates a lecturer account directly
+// with a system-generated temporary password, replacing the public signup
+// flow for this purpose. The lecturer is forced to set their own password on
+// first login (mustChangePassword) via a blocking in-dashboard modal — login
+// and dashboard access are never blocked by this. emailVerifiedAt is left
+// unset: real email verification is required, but only prompted *after* the
+// password has been changed (see middleware's deferred verify-email gate).
+
+// Avoids visually ambiguous characters (0/O, 1/I/l) since this is read off
+// a screen and relayed to the lecturer by hand during pilot onboarding.
+const UPPER = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+const LOWER = "abcdefghijkmnopqrstuvwxyz";
+const DIGITS = "23456789";
+
+function generateTempPassword(): string {
+  const all = UPPER + LOWER + DIGITS;
+  const pick = (chars: string) => chars[randomInt(chars.length)];
+
+  const chars = [pick(UPPER), pick(LOWER), pick(DIGITS), ...Array.from({ length: 7 }, () => pick(all))];
+  for (let i = chars.length - 1; i > 0; i--) {
+    const j = randomInt(i + 1);
+    [chars[i], chars[j]] = [chars[j], chars[i]];
+  }
+  return chars.join("");
+}
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -29,7 +53,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.errors[0].message }, { status: 422 });
   }
 
-  const { name, email, password } = parsed.data;
+  const { name, email } = parsed.data;
   const normalizedEmail = email.toLowerCase().trim();
 
   const existing = await db.user.findUnique({
@@ -40,7 +64,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "An account with this email already exists." }, { status: 409 });
   }
 
-  const hashedPassword = await bcrypt.hash(password, 12);
+  const temporaryPassword = generateTempPassword();
+  const hashedPassword = await bcrypt.hash(temporaryPassword, 12);
   const now = new Date();
 
   const lecturer = await db.user.create({
@@ -49,6 +74,7 @@ export async function POST(req: NextRequest) {
       email: normalizedEmail,
       hashedPassword,
       role: "LECTURER",
+      mustChangePassword: true,
       lecturerProfile: {
         create: {
           verified: true,
@@ -59,5 +85,5 @@ export async function POST(req: NextRequest) {
     select: { id: true, name: true, email: true },
   });
 
-  return NextResponse.json({ success: true, lecturer }, { status: 201 });
+  return NextResponse.json({ success: true, lecturer, temporaryPassword }, { status: 201 });
 }

@@ -37,6 +37,9 @@ export type EarningsData = {
   totalNetRevenue: number;
   currentMonthRevenue: number;
   currentMonthName: string;
+  pendingSettlement: number;
+  availableNextPayout: number;
+  lastPayoutDate: string | null;
   studentPurchases: StudentPurchase[];
   withdrawals: WithdrawalRecord[];
 };
@@ -55,6 +58,10 @@ function formatDate(iso: string): string {
     month: "short",
     day: "numeric",
   });
+}
+
+function formatOptionalDate(iso: string | null): string {
+  return iso ? formatDate(iso) : "No payout yet";
 }
 
 function relativeTime(iso: string): string {
@@ -209,7 +216,7 @@ function NetRevenueCard({ revenue }: { revenue: number }) {
         aria-hidden
       />
       <p className="relative text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: "#909090" }}>
-        Net Revenue
+        Current Earnings
       </p>
       <p
         className="relative mt-3 font-bold leading-none"
@@ -218,8 +225,41 @@ function NetRevenueCard({ revenue }: { revenue: number }) {
         {naira(revenue)}
       </p>
       <p className="relative mt-2.5 text-[12px] leading-relaxed" style={{ color: "#999999" }}>
-        Lifetime earnings after Apex platform fee (8.5%)
+        Lifetime earnings after Apex platform fee (8.5%).
       </p>
+    </div>
+  );
+}
+
+function PayoutSummaryGrid({
+  pendingSettlement,
+  availableNextPayout,
+  lastPayoutDate,
+}: {
+  pendingSettlement: number;
+  availableNextPayout: number;
+  lastPayoutDate: string | null;
+}) {
+  const rows = [
+    { label: "Pending Settlement", value: naira(pendingSettlement) },
+    { label: "Available Next Payout", value: naira(availableNextPayout) },
+    { label: "Last Payout Date", value: formatOptionalDate(lastPayoutDate) },
+    { label: "Payout Schedule", value: "Every Saturday" },
+  ];
+
+  return (
+    <div className="overflow-hidden rounded-[18px] border border-[#EAEAEA] bg-white shadow-[0_2px_12px_rgba(0,0,0,0.05)]">
+      {rows.map((row, i) => (
+        <div key={row.label}>
+          <div className="flex items-center justify-between gap-4 px-4 py-3.5">
+            <p className="text-[12px] text-[#64748B]">{row.label}</p>
+            <p className="max-w-[55%] text-right text-[13px] font-semibold text-[#0F172A]">
+              {row.value}
+            </p>
+          </div>
+          {i < rows.length - 1 && <div className="mx-4 border-t border-[#F4F4F5]" />}
+        </div>
+      ))}
     </div>
   );
 }
@@ -820,9 +860,9 @@ function RecentSalesModal({
   );
 }
 
-// ── Modal: Withdrawals ────────────────────────────────────────────────────────
+// ── Modal: Payout Requests ────────────────────────────────────────────────────
 
-function WithdrawalsModal({
+function PayoutRequestsModal({
   withdrawals,
   open,
   onClose,
@@ -832,9 +872,9 @@ function WithdrawalsModal({
   onClose: () => void;
 }) {
   return (
-    <Sheet open={open} onClose={onClose} label="Withdrawals">
+    <Sheet open={open} onClose={onClose} label="Payout Requests">
       <SheetHandle />
-      <SheetHeader title="Withdrawals" onClose={onClose} />
+      <SheetHeader title="Payout Requests" onClose={onClose} />
 
       <div
         className="min-h-0 flex-1 overflow-y-auto pb-10"
@@ -843,7 +883,7 @@ function WithdrawalsModal({
         {withdrawals.length === 0 ? (
           <div className="flex flex-col items-center gap-3 py-16 text-center">
             <Wallet className="h-8 w-8 text-[#CBD5E1]" aria-hidden />
-            <p className="text-[13px] text-[#94A3B8]">No withdrawals yet</p>
+            <p className="text-[13px] text-[#94A3B8]">No payout requests yet</p>
           </div>
         ) : (
           withdrawals.map((w, i) => (
@@ -874,7 +914,16 @@ function WithdrawalsModal({
 type ModalKey = "purchases" | "sales" | "withdrawals" | null;
 
 export function EarningsPageClient({ data }: { data: EarningsData }) {
-  const { totalNetRevenue, currentMonthRevenue, currentMonthName, studentPurchases, withdrawals } = data;
+  const {
+    totalNetRevenue,
+    currentMonthRevenue,
+    currentMonthName,
+    pendingSettlement,
+    availableNextPayout,
+    lastPayoutDate,
+    studentPurchases,
+    withdrawals,
+  } = data;
   const [modal, setModal] = useState<ModalKey>(null);
 
   const recentSales = useMemo(() => studentPurchases, [studentPurchases]);
@@ -893,6 +942,12 @@ export function EarningsPageClient({ data }: { data: EarningsData }) {
 
         <div className="space-y-4">
           <NetRevenueCard revenue={totalNetRevenue} />
+
+          <PayoutSummaryGrid
+            pendingSettlement={pendingSettlement}
+            availableNextPayout={availableNextPayout}
+            lastPayoutDate={lastPayoutDate}
+          />
 
           <MonthlyGoalSection
             currentRevenue={currentMonthRevenue}
@@ -915,8 +970,8 @@ export function EarningsPageClient({ data }: { data: EarningsData }) {
           />
           <ActionCard
             icon={Wallet}
-            title="Withdrawals"
-            description="View withdrawal history and payout status"
+            title="Payout Requests"
+            description="View queued and processed Saturday payouts"
             count={withdrawals.length}
             onClick={() => setModal("withdrawals")}
           />
@@ -933,7 +988,7 @@ export function EarningsPageClient({ data }: { data: EarningsData }) {
         open={modal === "sales"}
         onClose={() => setModal(null)}
       />
-      <WithdrawalsModal
+      <PayoutRequestsModal
         withdrawals={withdrawals}
         open={modal === "withdrawals"}
         onClose={() => setModal(null)}

@@ -34,6 +34,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             hashedPassword: true,
             isActive: true,
             emailVerifiedAt: true,
+            mustChangePassword: true,
           },
         });
 
@@ -48,6 +49,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           name: user.name,
           role: user.role,
           emailVerifiedAt: user.emailVerifiedAt ? user.emailVerifiedAt.toISOString() : null,
+          mustChangePassword: user.mustChangePassword,
         };
       },
     }),
@@ -60,16 +62,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.id = user.id as string;
         token.role = user.role;
         token.emailVerifiedAt = user.emailVerifiedAt;
+        token.mustChangePassword = user.mustChangePassword;
       }
 
-      // Re-fetch verification status when the client calls `update()`
-      // (e.g. right after a successful OTP verification).
+      // Re-fetch verification/password-change status when the client calls
+      // `update()` (e.g. right after a successful OTP verification, or after
+      // completing a forced password change).
       if (trigger === "update") {
         const dbUser = await db.user.findUnique({
           where: { id: token.id as string },
-          select: { emailVerifiedAt: true },
+          select: { emailVerifiedAt: true, mustChangePassword: true },
         });
         token.emailVerifiedAt = dbUser?.emailVerifiedAt ? dbUser.emailVerifiedAt.toISOString() : null;
+        token.mustChangePassword = dbUser?.mustChangePassword ?? false;
       }
 
       return token;
@@ -80,6 +85,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       // unknown despite the next-auth/jwt augmentation. Cast through unknown explicitly.
       session.user.role = token.role as Role;
       session.user.emailVerifiedAt = token.emailVerifiedAt as string | null;
+      session.user.mustChangePassword = token.mustChangePassword as boolean;
       // Present only while an admin is impersonating this user (see /api/admin/impersonate).
       session.user.impersonatorId = token.impersonatorId as string | undefined;
       session.user.impersonatorRole = token.impersonatorRole as Role | undefined;

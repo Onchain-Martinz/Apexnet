@@ -3,11 +3,11 @@ import { Prisma } from "@prisma/client";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { withdrawalRequestSchema } from "@/lib/validations/withdrawal";
-import { computeAvailableBalance } from "@/lib/withdrawals/balance";
+import { computeLecturerPayoutBalances } from "@/lib/payouts/settlement";
 import { captureException } from "@/lib/monitoring";
 
 // ── GET /api/lecturer/withdrawals ───────────────────────────────────────────
-// Returns the lecturer's available balance and withdrawal request history.
+// Returns settlement-aware payout balances and payout request history.
 
 export async function GET() {
   const session = await auth();
@@ -28,27 +28,35 @@ export async function GET() {
       return NextResponse.json({ error: "Lecturer profile not found" }, { status: 404 });
     }
 
-    // db.$transaction(async (tx) => ...) instead of Promise.all: pins this
-    // read to a single pooled connection instead of checking out 2
-    // concurrently (same fix applied to admin/page.tsx and the POST handler
-    // below already uses this pattern for its balance check).
-    const { availableBalance, withdrawals } = await db.$transaction(async (tx) => {
-      const availableBalance = await computeAvailableBalance(tx, lecturerProfile.id);
-      const withdrawals = await tx.withdrawalRequest.findMany({
-        where: { lecturerId: lecturerProfile.id },
-        orderBy: { createdAt: "desc" },
-        select: {
-          id: true,
-          amount: true,
-          status: true,
-          createdAt: true,
-          reviewedAt: true,
-        },
-      });
-      return { availableBalance, withdrawals };
+    // computeLecturerPayoutBalances runs as a standalone query (the
+    // interactive db.$transaction(async (tx) => ...) form previously used
+    // here caused "transaction closed" errors under load — see
+    // lecturer/page.tsx for the same pattern). The findMany below is a
+    // second, independent standalone query; nothing here needs the two
+    // pinned to the same connection.
+    const balances = await computeLecturerPayoutBalances(db, lecturerProfile.id);
+    const withdrawals = await db.withdrawalRequest.findMany({
+      where: { lecturerId: lecturerProfile.id },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        amount: true,
+        status: true,
+        createdAt: true,
+        reviewedAt: true,
+      },
     });
 
-    return NextResponse.json({ availableBalance, withdrawals });
+    return NextResponse.json({
+      availableBalance: balances.availableNextPayout,
+      currentEarnings: balances.currentEarnings,
+      pendingSettlement: balances.pendingSettlement,
+      availableNextPayout: balances.availableNextPayout,
+      requestedPayouts: balances.requestedPayouts,
+      settlementWindowHours: balances.settlementWindowHours,
+      lastPayoutDate: balances.lastPayoutDate?.toISOString() ?? null,
+      withdrawals,
+    });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientInitializationError) {
       console.error("[withdrawals/GET] DB connection pool exhausted", error);
@@ -63,7 +71,7 @@ export async function GET() {
 }
 
 // ── POST /api/lecturer/withdrawals ──────────────────────────────────────────
-// Submits a new withdrawal request for the authenticated lecturer.
+// Submits a new payout queue request for the authenticated lecturer.
 //
 // computeAvailableBalance() runs outside the transaction; the transaction
 // itself contains only the withdrawalRequest insert (isolationLevel:
@@ -121,9 +129,9 @@ export async function POST(req: NextRequest) {
 
     for (let attempt = 1; attempt <= MAX_SERIALIZATION_RETRIES; attempt++) {
       try {
-        const availableBalance = await computeAvailableBalance(db, lecturerProfile.id);
+        const balances = await computeLecturerPayoutBalances(db, lecturerProfile.id);
 
-        if (parsed.data.amount > availableBalance) {
+        if (parsed.data.amount > balances.availableNextPayout) {
           throw new InsufficientBalanceError();
         }
 
@@ -143,7 +151,10 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: true, withdrawal }, { status: 201 });
       } catch (error) {
         if (error instanceof InsufficientBalanceError) {
-          return NextResponse.json({ error: "Amount exceeds available balance" }, { status: 422 });
+          return NextResponse.json(
+            { error: "Amount exceeds available next payout" },
+            { status: 422 },
+          );
         }
 
         // Postgres serialization failure (40001) — another concurrent

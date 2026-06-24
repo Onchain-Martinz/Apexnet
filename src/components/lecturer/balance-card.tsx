@@ -97,7 +97,7 @@ export function BalanceCard({ availableBalance, bankDetails }: BalanceCardProps)
 
         {/* Label */}
         <p className="text-[11px] font-semibold tracking-[0.13em] uppercase text-white/45 mb-2">
-          Available Balance
+          Available Next Payout
         </p>
 
         {/* Amount */}
@@ -110,7 +110,7 @@ export function BalanceCard({ availableBalance, bankDetails }: BalanceCardProps)
 
         {/* Subtitle */}
         <p className="text-[13px] text-white/40 mt-1.5">
-          {hasBalance ? "Ready for withdrawal" : "No balance available yet"}
+          {hasBalance ? "Ready for Saturday payout" : "No settled balance available yet"}
         </p>
 
         {/* Separator */}
@@ -129,9 +129,12 @@ export function BalanceCard({ availableBalance, bankDetails }: BalanceCardProps)
             color: hasBalance ? "#07132A" : "rgba(255,255,255,0.38)",
           }}
         >
-          Withdraw Funds
+          Send Request
           <ArrowRight className="h-3.5 w-3.5" aria-hidden />
         </button>
+
+        {/* Schedule footnote */}
+        <p className="mt-3 text-[12px] text-white/35">Payouts processed every Saturday</p>
       </div>
 
       <WithdrawalModal

@@ -6,6 +6,7 @@ export const WITHDRAWAL_SELECT_FIELDS = {
   status: true,
   createdAt: true,
   reviewedAt: true,
+  paidAt: true,
   transferReference: true,
   transferCode: true,
   failureReason: true,

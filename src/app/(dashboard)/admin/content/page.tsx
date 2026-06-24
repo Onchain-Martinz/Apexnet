@@ -35,8 +35,8 @@ export default async function AdminContentPage() {
             <Wallet className="h-5 w-5 text-foreground" aria-hidden />
           </span>
           <div>
-            <p className="text-[15px] font-semibold text-foreground">Withdrawals</p>
-            <p className="text-[13px] text-muted-foreground">Review and process withdrawal requests</p>
+            <p className="text-[15px] font-semibold text-foreground">Payout Queue</p>
+            <p className="text-[13px] text-muted-foreground">Review and process payout requests</p>
           </div>
         </Link>
       </div>

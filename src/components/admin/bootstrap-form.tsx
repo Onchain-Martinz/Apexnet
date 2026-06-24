@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { Input, PasswordInput } from "@/components/ui/input";
+import { EmailInput, Input, PasswordInput } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { bootstrapAdminSchema } from "@/lib/validations/admin";
 import { routes } from "@/config/routes";
@@ -92,9 +92,8 @@ export function BootstrapAdminForm() {
         disabled={loading}
       />
 
-      <Input
+      <EmailInput
         label="Email"
-        type="email"
         autoComplete="email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}

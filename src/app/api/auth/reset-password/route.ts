@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
   await db.$transaction([
     db.user.update({
       where: { id: user.id },
-      data: { hashedPassword },
+      data: { hashedPassword, mustChangePassword: false },
     }),
     db.passwordResetOtp.delete({ where: { userId: user.id } }),
   ]);

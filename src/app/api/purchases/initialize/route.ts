@@ -18,6 +18,20 @@ import { captureException } from "@/lib/monitoring";
 //  - A partial unique index on (studentId, textbookId) WHERE status='PENDING'
 //    ensures only one PENDING purchase per (student, textbook) pair at a time.
 //  - Concurrent creates race; the loser gets P2002 and reads the winner's row.
+//
+// Policy A — price changes invalidate pending purchases:
+//  - A PENDING purchase's `amount` is fixed at the price the moment it was
+//    created. If the lecturer edits the price before the student finishes
+//    checkout and the student then resumes (or retries) that same checkout,
+//    reusing the stale PENDING row would hand the SDK the textbook's CURRENT
+//    price to charge while the DB still expects the OLD one — Flutterwave
+//    charges correctly, but completePurchaseByReference()'s amount-integrity
+//    check then sees a false mismatch and fails an otherwise legitimate
+//    payment (see APX_dfdddb3d-... incident).
+//  - Fix: only reuse an existing PENDING purchase when its stored amount
+//    still matches the textbook's current price. Otherwise mark it FAILED
+//    (it can never be completed correctly — its amount no longer reflects
+//    reality) and create a fresh PENDING row at the current price.
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -75,12 +89,22 @@ export async function POST(req: NextRequest) {
 
   const existingPending = await db.purchase.findFirst({
     where: { studentId: session.user.id, textbookId, status: "PENDING" },
-    select: { id: true, paymentReference: true },
+    select: { id: true, paymentReference: true, amount: true },
   });
 
-  if (existingPending) {
+  const reusable = existingPending && Number(existingPending.amount) === price;
+
+  if (reusable) {
     purchase = existingPending;
   } else {
+    if (existingPending) {
+      // Stale — the price moved since this PENDING purchase was created.
+      // Invalidate it so it can never be matched against the new amount.
+      await db.purchase.updateMany({
+        where: { id: existingPending.id, status: "PENDING" },
+        data: { status: "FAILED" },
+      });
+    }
     try {
       purchase = await db.purchase.create({
         data: {

@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Input, PasswordInput } from "@/components/ui/input";
+import { EmailInput, PasswordInput } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { forgotPasswordSchema, resetPasswordSchema } from "@/lib/validations/auth";
 
@@ -189,9 +189,8 @@ function ResetPasswordForm() {
       )}
 
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
-        <Input
+        <EmailInput
           label="Email"
-          type="email"
           placeholder="you@university.edu.ng"
           autoComplete="email"
           autoCapitalize="none"

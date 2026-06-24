@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
-import { Input, PasswordInput } from "@/components/ui/input";
+import { EmailInput, Input, PasswordInput } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { registerSchema } from "@/lib/validations/auth";
 import { cn } from "@/lib/utils/cn";
@@ -169,9 +169,8 @@ export default function SignupPage() {
           disabled={loading}
         />
 
-        <Input
+        <EmailInput
           label="Email"
-          type="email"
           placeholder="you@university.edu.ng"
           autoComplete="email"
           autoCapitalize="none"

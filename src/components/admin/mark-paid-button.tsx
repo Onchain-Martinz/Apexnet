@@ -4,26 +4,31 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
-interface WithdrawalRetryButtonProps {
+interface MarkPaidButtonProps {
   id: string;
 }
 
-export function WithdrawalRetryButton({ id }: WithdrawalRetryButtonProps) {
+// Pilot manual-payout flow: the admin has already transferred the funds
+// outside the app (Flutterwave dashboard or direct bank transfer) and uses
+// this to record that fact — it does not trigger any transfer itself.
+export function MarkPaidButton({ id }: MarkPaidButtonProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function retry() {
+  async function markPaid() {
     setError(null);
     setLoading(true);
     try {
-      const res = await fetch(`/api/admin/withdrawals/${id}/retry`, {
-        method: "POST",
+      const res = await fetch(`/api/admin/withdrawals/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "PAID" }),
       });
 
       if (!res.ok) {
         const data = await res.json().catch(() => null);
-        setError(data?.error ?? "Failed to retry transfer");
+        setError(data?.error ?? "Failed to update request");
         return;
       }
 
@@ -38,8 +43,8 @@ export function WithdrawalRetryButton({ id }: WithdrawalRetryButtonProps) {
   return (
     <div className="space-y-2">
       {error && <p className="text-[12px] text-destructive">{error}</p>}
-      <Button size="sm" className="w-full" loading={loading} disabled={loading} onClick={retry}>
-        Retry payout transfer
+      <Button size="sm" className="w-full" loading={loading} disabled={loading} onClick={markPaid}>
+        Mark as Paid
       </Button>
     </div>
   );

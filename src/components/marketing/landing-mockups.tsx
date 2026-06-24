@@ -1,53 +1,84 @@
 import { BookOpen, CheckCircle2, TrendingUp, Wallet } from "lucide-react";
 
-// ── Hero mockup — textbook cover, purchase action, reading progress ─────────
-// Static visual composed from the same card/button/progress patterns used
-// throughout the dashboard. No live data — purely illustrative.
+// Marketing-only visuals — static, illustrative, no live data. Built from the
+// same card/button/progress patterns used throughout the dashboard, with a
+// navy (#071330) accent specific to the landing page.
+
+const NAVY = "#071330";
+
+// ── Hero mockup — a phone frame around a textbook detail screen ────────────
 
 export function HeroMockup() {
   return (
-    <div className="mx-auto w-full max-w-sm rounded-card border border-card-border bg-card p-card shadow-card">
-      <div className="flex gap-4">
-        <div className="flex h-24 w-[72px] flex-shrink-0 items-center justify-center rounded-md bg-muted">
-          <BookOpen className="h-6 w-6 text-muted-foreground" aria-hidden />
-        </div>
-        <div className="flex min-w-0 flex-1 flex-col justify-between py-0.5">
-          <div>
-            <p className="text-[14px] font-semibold leading-tight text-foreground">
-              Principles of Microeconomics
+    <div className="mx-auto w-[250px] sm:w-[270px]">
+      <div className="relative rounded-[42px] p-[10px] shadow-xl" style={{ backgroundColor: NAVY }}>
+        {/* Speaker notch */}
+        <div className="absolute left-1/2 top-3 z-10 h-1.5 w-14 -translate-x-1/2 rounded-full bg-white/15" />
+
+        {/* Screen */}
+        <div className="overflow-hidden rounded-[32px] bg-white">
+          <div className="flex aspect-[9/19] flex-col px-4 pb-5 pt-9">
+            {/* Status row */}
+            <div className="flex items-center justify-between text-[10px] font-medium text-muted-foreground">
+              <span>9:41</span>
+              <span className="h-1.5 w-8 rounded-full bg-foreground/10" />
+            </div>
+
+            <p className="mt-5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Your Library
             </p>
-            <p className="mt-1 text-[12px] text-muted-foreground">Dr. Adaeze Okonjo</p>
-            <p className="mt-1 text-[12px] text-muted-foreground">Economics · 200 Level</p>
+
+            {/* Book card */}
+            <div className="mt-3 flex-1 rounded-card border border-card-border bg-card p-card shadow-card">
+              <div className="flex h-24 w-full items-center justify-center rounded-md" style={{ backgroundColor: `${NAVY}0F` }}>
+                <BookOpen className="h-7 w-7" style={{ color: NAVY }} aria-hidden />
+              </div>
+
+              <p className="mt-3 text-[13px] font-semibold leading-tight text-foreground">
+                Principles of Microeconomics
+              </p>
+              <p className="mt-1 text-[11px] text-muted-foreground">Dr. Adaeze Okonjo · Economics</p>
+
+              <div className="mt-3 flex items-center justify-between">
+                <p className="text-[14px] font-semibold text-foreground">₦4,500</p>
+                <span className="flex items-center gap-1 rounded-full bg-success/10 px-2 py-0.5 text-[10px] font-semibold text-success">
+                  <CheckCircle2 className="h-3 w-3" aria-hidden />
+                  Owned
+                </span>
+              </div>
+
+              <div
+                className="mt-3 flex h-10 items-center justify-center rounded-button text-[13px] font-semibold text-white"
+                style={{ backgroundColor: NAVY }}
+              >
+                Continue Reading
+              </div>
+
+              <div className="mt-3 border-t border-border pt-3">
+                <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                  <span>Chapter 4 of 12</span>
+                  <span>33%</span>
+                </div>
+                <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                  <div className="h-full w-1/3 rounded-full" style={{ backgroundColor: NAVY }} />
+                </div>
+              </div>
+            </div>
           </div>
-          <p className="text-[15px] font-semibold text-foreground">₦4,500</p>
-        </div>
-      </div>
-
-      <div className="mt-4 flex h-12 items-center justify-center rounded-button bg-primary text-[15px] font-semibold text-primary-foreground">
-        Buy now
-      </div>
-
-      <div className="mt-4 border-t border-border pt-4">
-        <div className="flex items-center justify-between text-[12px] text-muted-foreground">
-          <span>Reading progress</span>
-          <span>Chapter 4 of 12</span>
-        </div>
-        <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-          <div className="h-full w-1/3 rounded-full bg-primary" />
         </div>
       </div>
     </div>
   );
 }
 
-// ── Lecturer mockup — earnings + sales row, matches dashboard styling ───────
+// ── Lecturer mockup — earnings + sales row ──────────────────────────────────
 
 export function LecturerMockup() {
   return (
     <div className="mx-auto w-full max-w-sm space-y-3">
       <div className="rounded-card border border-card-border bg-card p-card shadow-card">
         <div className="flex items-start justify-between gap-4">
-          <p className="text-[13px] text-muted-foreground">Your Earnings</p>
+          <p className="text-[13px] text-muted-foreground">Available next payout</p>
           <Wallet className="h-5 w-5 text-muted-foreground" aria-hidden />
         </div>
         <p className="mt-1 text-[28px] font-bold leading-tight text-foreground">₦182,400</p>
@@ -58,8 +89,8 @@ export function LecturerMockup() {
       </div>
 
       <div className="flex items-center gap-4 rounded-card border border-card-border bg-card p-card shadow-card">
-        <div className="flex h-14 w-10 flex-shrink-0 items-center justify-center rounded-md bg-muted">
-          <BookOpen className="h-5 w-5 text-muted-foreground" aria-hidden />
+        <div className="flex h-14 w-10 flex-shrink-0 items-center justify-center rounded-md" style={{ backgroundColor: `${NAVY}0F` }}>
+          <BookOpen className="h-5 w-5" style={{ color: NAVY }} aria-hidden />
         </div>
         <div className="min-w-0 flex-1">
           <p className="truncate text-[14px] font-semibold text-foreground">Organic Chemistry I</p>
@@ -71,7 +102,7 @@ export function LecturerMockup() {
   );
 }
 
-// ── Student mockup — personal library with reading progress ─────────────────
+// ── Student mockup — personal library with reading progress ────────────────
 
 export function StudentMockup() {
   const items = [
@@ -86,13 +117,13 @@ export function StudentMockup() {
           key={item.title}
           className="flex items-center gap-4 rounded-card border border-card-border bg-card p-card shadow-card"
         >
-          <div className="flex h-14 w-10 flex-shrink-0 items-center justify-center rounded-md bg-muted">
-            <BookOpen className="h-5 w-5 text-muted-foreground" aria-hidden />
+          <div className="flex h-14 w-10 flex-shrink-0 items-center justify-center rounded-md" style={{ backgroundColor: `${NAVY}0F` }}>
+            <BookOpen className="h-5 w-5" style={{ color: NAVY }} aria-hidden />
           </div>
           <div className="min-w-0 flex-1">
             <p className="truncate text-[14px] font-semibold text-foreground">{item.title}</p>
             <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-              <div className="h-full rounded-full bg-primary" style={{ width: item.progress }} />
+              <div className="h-full rounded-full" style={{ width: item.progress, backgroundColor: NAVY }} />
             </div>
             <p className="mt-1 text-[12px] text-muted-foreground">{item.meta}</p>
           </div>
@@ -100,7 +131,7 @@ export function StudentMockup() {
       ))}
 
       <div className="flex items-center gap-2 rounded-card border border-card-border bg-card p-card text-[12px] text-muted-foreground shadow-card">
-        <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-foreground" aria-hidden />
+        <CheckCircle2 className="h-4 w-4 flex-shrink-0" style={{ color: NAVY }} aria-hidden />
         <span>Verified materials from your lecturers</span>
       </div>
     </div>

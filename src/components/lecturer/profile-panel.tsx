@@ -266,7 +266,7 @@ export function ProfilePanel({
         )}
       </section>
 
-      {/* ── Withdrawal Account ── */}
+      {/* ── Payout Account ── */}
       <BankVerificationPanel initial={initialBank} />
 
       {/* ── Security card ── */}

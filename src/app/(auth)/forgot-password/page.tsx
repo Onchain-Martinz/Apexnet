@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Input } from "@/components/ui/input";
+import { EmailInput } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { forgotPasswordSchema } from "@/lib/validations/auth";
 
@@ -71,9 +71,8 @@ export default function ForgotPasswordPage() {
       )}
 
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
-        <Input
+        <EmailInput
           label="Email"
-          type="email"
           placeholder="you@university.edu.ng"
           autoComplete="email"
           autoCapitalize="none"

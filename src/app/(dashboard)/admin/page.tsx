@@ -59,7 +59,7 @@ export default async function AdminPage() {
   // db.$transaction([...]) batches these 6 reads onto a single pooled
   // connection (one BEGIN/COMMIT round trip) instead of Promise.all's 6
   // concurrent connection checkouts — Neon's pool here is capped at 5.
-  const [revenueAgg, totalStudents, totalLecturers, publishedTextbooks, booksSold, pendingWithdrawals] =
+  const [revenueAgg, totalStudents, totalLecturers, publishedTextbooks, booksSold, pendingPayouts] =
     await db.$transaction([
       db.purchase.aggregate({ _sum: { amount: true }, where: { status: "COMPLETED" } }),
       db.user.count({ where: { role: "STUDENT" } }),
@@ -95,7 +95,7 @@ export default async function AdminPage() {
           <MetricCard label="Total Lecturers" value={totalLecturers} icon={Users} />
           <MetricCard label="Published Textbooks" value={publishedTextbooks} icon={BookOpen} />
           <MetricCard label="Books Sold" value={booksSold} icon={ShoppingBag} />
-          <MetricCard label="Pending Withdrawals" value={pendingWithdrawals} icon={Wallet} />
+          <MetricCard label="Pending Payouts" value={pendingPayouts} icon={Wallet} />
         </div>
       </section>
 
@@ -108,7 +108,7 @@ export default async function AdminPage() {
           <QuickLink href={routes.admin.lecturers} label="Lecturers" />
           <QuickLink href={routes.admin.students} label="Students" />
           <QuickLink href={routes.admin.textbooks} label="Textbooks" />
-          <QuickLink href={routes.admin.withdrawals} label="Withdrawals" />
+          <QuickLink href={routes.admin.withdrawals} label="Payout Queue" />
           <QuickLink href={routes.admin.revenue} label="Platform Revenue" />
           <QuickLink href={routes.admin.profile} label="Profile" />
         </div>

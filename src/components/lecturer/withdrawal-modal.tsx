@@ -44,7 +44,7 @@ export function WithdrawalModal({ open, onClose, availableBalance, bankDetails }
       return;
     }
     if (value > availableBalance) {
-      setError("Amount exceeds available balance");
+      setError("Amount exceeds available next payout");
       return;
     }
 
@@ -73,8 +73,17 @@ export function WithdrawalModal({ open, onClose, availableBalance, bankDetails }
   }
 
   return (
-    <Modal open={open} onClose={handleClose} title="Request Withdrawal">
+    <Modal open={open} onClose={handleClose} title="Request Saturday Payout">
       <div className="space-y-element">
+        <div className="rounded-card border border-card-border bg-muted/40 p-card">
+          <p className="text-[14px] font-semibold text-foreground">
+            Payouts are processed every Saturday.
+          </p>
+          <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
+            This request joins the payout queue. Only settled earnings are available for payout.
+          </p>
+        </div>
+
         <Input
           type="number"
           inputMode="decimal"
@@ -85,7 +94,7 @@ export function WithdrawalModal({ open, onClose, availableBalance, bankDetails }
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
           error={error ?? undefined}
-          hint={`Available balance: ${naira(availableBalance)}`}
+          hint={`Available next payout: ${naira(availableBalance)}`}
           disabled={loading}
           autoFocus
         />
@@ -105,7 +114,7 @@ export function WithdrawalModal({ open, onClose, availableBalance, bankDetails }
             </div>
           ) : (
             <p className="text-[13px] text-muted-foreground">
-              No bank details on file. Add your bank details in your profile before requesting a withdrawal.
+              No bank details on file. Add your bank details in your profile before requesting a payout.
             </p>
           )}
         </div>
@@ -121,7 +130,7 @@ export function WithdrawalModal({ open, onClose, availableBalance, bankDetails }
             disabled={loading || availableBalance <= 0 || !hasBankDetails}
             onClick={handleContinue}
           >
-            Continue
+            Send Request
           </Button>
         </div>
       </div>

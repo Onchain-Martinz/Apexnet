@@ -19,7 +19,15 @@ export async function POST() {
 
   const admin = await db.user.findUnique({
     where: { id: impersonatorId },
-    select: { id: true, email: true, name: true, role: true, isActive: true, emailVerifiedAt: true },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      role: true,
+      isActive: true,
+      emailVerifiedAt: true,
+      mustChangePassword: true,
+    },
   });
 
   if (!admin || admin.role !== "ADMIN" || !admin.isActive) {

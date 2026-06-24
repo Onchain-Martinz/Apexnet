@@ -31,7 +31,15 @@ export async function POST(req: NextRequest) {
 
   const target = await db.user.findUnique({
     where: { id: userId },
-    select: { id: true, email: true, name: true, role: true, isActive: true, emailVerifiedAt: true },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      role: true,
+      isActive: true,
+      emailVerifiedAt: true,
+      mustChangePassword: true,
+    },
   });
 
   if (!target) {

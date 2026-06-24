@@ -49,8 +49,8 @@ export default async function AdminRevenuePage() {
 
   const platformVolume = roundCurrency(Number(grossAgg._sum.amount ?? 0));
   const platformRevenue = roundCurrency(platformVolume * PLATFORM_FEE_RATE);
-  const totalWithdrawals = roundCurrency(Number(paidAgg._sum.amount ?? 0));
-  const outstandingWithdrawals = roundCurrency(Number(outstandingAgg._sum.amount ?? 0));
+  const totalPayouts = roundCurrency(Number(paidAgg._sum.amount ?? 0));
+  const outstandingPayouts = roundCurrency(Number(outstandingAgg._sum.amount ?? 0));
 
   return (
     <div className="px-page pt-12 pb-6 space-y-section max-w-lg mx-auto">
@@ -66,8 +66,8 @@ export default async function AdminRevenuePage() {
         <div className="grid grid-cols-2 gap-element">
           <MetricCard label="Platform Volume" value={naira(platformVolume)} icon={TrendingUp} />
           <MetricCard label="Total Platform Revenue" value={naira(platformRevenue)} icon={Landmark} />
-          <MetricCard label="Total Withdrawals" value={naira(totalWithdrawals)} icon={Wallet} />
-          <MetricCard label="Outstanding Withdrawals" value={naira(outstandingWithdrawals)} icon={Clock} />
+          <MetricCard label="Total Payouts" value={naira(totalPayouts)} icon={Wallet} />
+          <MetricCard label="Outstanding Payout Requests" value={naira(outstandingPayouts)} icon={Clock} />
           <MetricCard label="Books Sold" value={booksSold} icon={ShoppingBag} />
         </div>
       </section>

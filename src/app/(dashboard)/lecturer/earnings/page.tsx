@@ -1,10 +1,11 @@
 import { requireRole } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { getLecturerProfile } from "@/lib/data/lecturer";
-import { LECTURER_SHARE_RATE } from "@/lib/constants";
+import { LECTURER_SHARE_RATE, SETTLEMENT_WINDOW_HOURS } from "@/lib/constants";
 import { roundCurrency } from "@/lib/utils/format";
 import { EarningsPageClient } from "@/components/lecturer/earnings-page-client";
 import type { EarningsData } from "@/components/lecturer/earnings-page-client";
+import { computeLecturerPayoutBalances } from "@/lib/payouts/settlement";
 
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
@@ -18,8 +19,12 @@ export default async function LecturerEarningsPage() {
 
   const lecturerId = lecturerProfile?.id ?? null;
 
-  // db.$transaction([...]) instead of Promise.all: pins these 2 reads to a
-  // single pooled connection instead of checking out 2 concurrently.
+  // db.$transaction([...]) — batch form, not the interactive callback form:
+  // pins these 2 reads to a single pooled connection instead of checking out
+  // 2 concurrently. computeLecturerPayoutBalances runs as its own standalone
+  // query below, outside the transaction — see lecturer/page.tsx for the
+  // same pattern (the interactive callback form caused "transaction closed"
+  // errors here).
   const [textbooks, withdrawalRows] = lecturerId
     ? await db.$transaction([
         db.textbook.findMany({
@@ -53,7 +58,19 @@ export default async function LecturerEarningsPage() {
           },
         }),
       ])
-    : [[], []];
+    : ([[], []] as const);
+
+  const payoutBalances = lecturerId
+    ? await computeLecturerPayoutBalances(db, lecturerId)
+    : {
+        currentEarnings: 0,
+        pendingSettlement: 0,
+        availableNextPayout: 0,
+        requestedPayouts: 0,
+        settlementCutoff: new Date(),
+        settlementWindowHours: SETTLEMENT_WINDOW_HOURS,
+        lastPayoutDate: null,
+      };
 
   // ── Build flat purchase list, sorted by date desc ─────────────────────────
 
@@ -102,6 +119,9 @@ export default async function LecturerEarningsPage() {
     totalNetRevenue,
     currentMonthRevenue,
     currentMonthName: MONTH_NAMES[now.getMonth()],
+    pendingSettlement: payoutBalances.pendingSettlement,
+    availableNextPayout: payoutBalances.availableNextPayout,
+    lastPayoutDate: payoutBalances.lastPayoutDate?.toISOString() ?? null,
     studentPurchases: allPurchases.map(({ bookId, bookTitle, coverImageKey, studentName, amount, paidAt }) => ({
       bookId,
       bookTitle,

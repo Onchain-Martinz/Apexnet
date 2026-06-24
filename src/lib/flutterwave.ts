@@ -300,6 +300,68 @@ export async function initiateTransfer(
   };
 }
 
+// ── Available balance ────────────────────────────────────────────────────────
+// GET /v3/balances/:currency
+
+export interface FlutterwaveBalanceResult {
+  currency: string;
+  availableBalance: number;
+  ledgerBalance: number | null;
+}
+
+function readNumericField(data: Record<string, unknown>, keys: string[]): number | null {
+  for (const key of keys) {
+    const value = data[key];
+    if (typeof value === "number") return value;
+    if (typeof value === "string") {
+      const parsed = Number(value);
+      if (Number.isFinite(parsed)) return parsed;
+    }
+  }
+  return null;
+}
+
+export async function getAvailableBalance(
+  currency = "NGN",
+): Promise<FlutterwaveBalanceResult> {
+  const normalizedCurrency = currency.toUpperCase();
+  const url = `${FLW_BASE_URL}/balances/${encodeURIComponent(normalizedCurrency)}`;
+
+  console.log("[flutterwave/balances] Fetching available balance", {
+    url,
+    currency: normalizedCurrency,
+  });
+
+  const res = await fetch(url, {
+    headers: { Authorization: authHeader() },
+    cache: "no-store",
+  });
+
+  const json = await readResponse(res, "balances");
+
+  if (!res.ok || json.status !== "success") {
+    throw new Error((json.message as string) ?? "Failed to fetch Flutterwave balance");
+  }
+
+  const data = json.data as Record<string, unknown>;
+  const availableBalance = readNumericField(data, [
+    "available_balance",
+    "availableBalance",
+    "available",
+    "balance",
+  ]);
+
+  if (availableBalance === null) {
+    throw new Error("Flutterwave balance response did not include an available balance");
+  }
+
+  return {
+    currency: (data.currency as string | undefined) ?? normalizedCurrency,
+    availableBalance,
+    ledgerBalance: readNumericField(data, ["ledger_balance", "ledgerBalance"]),
+  };
+}
+
 // ── Verify transfer ───────────────────────────────────────────────────────────
 // GET /v3/transfers/:id
 
