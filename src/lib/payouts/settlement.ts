@@ -53,10 +53,16 @@ export async function computeLecturerPayoutBalances(
         WHERE p.status = 'COMPLETED'
           AND t."lecturerId" = ${lecturerId}::uuid
           AND COALESCE(p."paidAt", p."createdAt") <= ${settlementCutoff}) AS settled_revenue,
+      -- Only PAID withdrawals reduce the available balance. PENDING/APPROVED
+      -- requests must NOT reserve funds — money stays in the lecturer's
+      -- available balance until they've actually received it (admin marks
+      -- PAID). This intentionally allows the sum of open (non-PAID) requests
+      -- to exceed the current available balance; admin approval re-checks
+      -- the balance at approval time via the same query.
       (SELECT COALESCE(SUM(amount), 0)
          FROM withdrawal_requests
         WHERE "lecturerId" = ${lecturerId}::uuid
-          AND status NOT IN ('REJECTED', 'FAILED')
+          AND status = 'PAID'
           AND (${excludeRequestId}::uuid IS NULL OR id <> ${excludeRequestId}::uuid)) AS reserved,
       (SELECT MAX("paidAt")
          FROM withdrawal_requests
@@ -68,6 +74,8 @@ export async function computeLecturerPayoutBalances(
   const currentEarnings = roundCurrency(Number(row.current_revenue) * LECTURER_SHARE_RATE);
   const pendingSettlement = roundCurrency(Number(row.pending_revenue) * LECTURER_SHARE_RATE);
   const settledEarnings = roundCurrency(Number(row.settled_revenue) * LECTURER_SHARE_RATE);
+  // Despite the field name (kept for API/type compatibility), this is now
+  // PAID-only — see the "reserved" subquery comment above.
   const requestedPayouts = roundCurrency(Number(row.reserved));
 
   return {

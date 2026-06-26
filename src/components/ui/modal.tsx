@@ -28,7 +28,7 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
   if (!open) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center">
+    <div className="fixed inset-0 z-[100] flex items-end justify-center pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:items-center sm:pb-0">
       <div
         className="absolute inset-0 bg-black/50"
         onClick={onClose}

@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { BookOpen } from "lucide-react";
+import { BookOpen, ChevronLeft } from "lucide-react";
 import { requireSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { routes } from "@/config/routes";
@@ -59,6 +59,11 @@ export default async function TextbookDetailsPage({
       })
     : null;
 
+  // Same entitlement check that decides "Read Textbook" vs "Buy Now" below —
+  // reused for back navigation so it always resolves to where this specific
+  // book actually lives for this viewer, instead of guessing from history.
+  const canRead = isOwner || isFree || Boolean(owned);
+
   // Hidden (ARCHIVED) and DRAFT textbooks are only visible to their owning
   // lecturer, admins (for moderation), and students who already own them —
   // so existing purchases/access never break when a textbook is hidden.
@@ -77,8 +82,24 @@ export default async function TextbookDetailsPage({
     .filter(Boolean)
     .join(" · ");
 
+  const backHref = isAdmin
+    ? routes.admin.textbooks
+    : session.user.role === "LECTURER"
+      ? isOwner ? routes.lecturer.textbooks : "/textbooks"
+      : canRead
+        ? routes.student.library
+        : routes.student.discover;
+
   return (
     <div className="px-page pt-12 pb-6 space-y-section max-w-lg mx-auto">
+
+      <Link
+        href={backHref}
+        aria-label="Back"
+        className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full hover:bg-muted transition-colors"
+      >
+        <ChevronLeft className="h-5 w-5 text-foreground" aria-hidden />
+      </Link>
 
       {/* Cover image */}
       <div className="flex justify-center">
@@ -132,7 +153,7 @@ export default async function TextbookDetailsPage({
           <p className="text-[13px] text-muted-foreground">
             No file has been uploaded for this textbook yet.
           </p>
-        ) : isOwner || isFree || owned ? (
+        ) : canRead ? (
           <Link
             href={routes.textbookReader(textbook.id)}
             className="flex h-14 w-full items-center justify-center rounded-button bg-primary text-[15px] font-semibold text-primary-foreground transition-all duration-150 active:scale-[0.97]"

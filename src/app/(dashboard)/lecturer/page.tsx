@@ -56,6 +56,7 @@ export default async function LecturerPage() {
   let draftCount = 0;
   let salesCount = 0;
   let availableBalance = 0;
+  let settling = 0;
   let activity: ActivityItem[] = [];
   let booksData: BookData[] = [];
   let salesSummary: SalesSummaryData = {
@@ -121,6 +122,7 @@ export default async function LecturerPage() {
     salesCount = sales;
 
     availableBalance = payoutBalances.availableNextPayout;
+    settling = payoutBalances.pendingSettlement;
 
     // ── Build activity feed ──────────────────────────────────────────────────
     for (const book of textbooks) {
@@ -266,6 +268,7 @@ export default async function LecturerPage() {
       {/* ── Section 2: Balance Card (hero) ────────────────────────────────── */}
       <BalanceCard
         availableBalance={availableBalance}
+        settling={settling}
         bankDetails={bankDetails}
       />
 

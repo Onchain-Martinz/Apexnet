@@ -141,23 +141,26 @@ function MetricsSheet({
         aria-hidden
       />
 
-      {/* Sheet */}
+      {/* Centered dialog */}
+      <div
+        className={[
+          "fixed inset-0 z-50 flex items-center justify-center p-4",
+          open ? "" : "pointer-events-none",
+        ].join(" ")}
+        onClick={onClose}
+      >
       <div
         role="dialog"
         aria-modal
         aria-label="Book Metrics"
+        onClick={(e) => e.stopPropagation()}
         className={[
-          "fixed inset-x-0 bottom-0 z-50 flex flex-col overflow-hidden rounded-t-[24px] bg-white shadow-[0_-4px_40px_rgba(0,0,0,0.10)]",
-          "transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]",
-          open ? "translate-y-0" : "translate-y-full",
+          "flex w-full max-w-md flex-col overflow-hidden rounded-[24px] bg-white shadow-[0_4px_40px_rgba(0,0,0,0.10)]",
+          "transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]",
+          open ? "scale-100 opacity-100" : "pointer-events-none scale-95 opacity-0",
         ].join(" ")}
         style={{ maxHeight: "85vh" }}
       >
-        {/* Drag handle — fixed */}
-        <div className="flex flex-shrink-0 justify-center pt-3 pb-1">
-          <div className="h-1 w-10 rounded-full bg-[#E2E8F0]" />
-        </div>
-
         {/* Header — fixed */}
         <div className="flex flex-shrink-0 items-center justify-between border-b border-[#F4F4F5] px-5 py-3">
           <h3 className="text-[16px] font-semibold text-[#0F172A]">Book Metrics</h3>
@@ -245,6 +248,7 @@ function MetricsSheet({
             </>
           )}
         </div>
+      </div>
       </div>
     </>
   );

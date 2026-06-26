@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
-import { BookOpen, Check, X, ChevronRight, Copy, Users, ShoppingBag, Wallet, Search } from "lucide-react";
+import { BookOpen, Check, X, ChevronRight, Copy, Users, Wallet, Search } from "lucide-react";
 import type { WithdrawalStatus } from "@prisma/client";
 import { coverUrl } from "@/lib/utils/cover-url";
+import { AvailableBalanceCard } from "@/components/lecturer/available-balance-card";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -60,23 +61,6 @@ function formatDate(iso: string): string {
   });
 }
 
-function formatOptionalDate(iso: string | null): string {
-  return iso ? formatDate(iso) : "No payout yet";
-}
-
-function relativeTime(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60_000);
-  if (mins < 2) return "Just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs === 1 ? "1 hour" : hrs + " hours"} ago`;
-  const days = Math.floor(hrs / 24);
-  if (days === 1) return "Yesterday";
-  if (days < 30) return `${days} days ago`;
-  return new Date(iso).toLocaleDateString("en-NG", { month: "short", day: "numeric" });
-}
-
 // ── Adaptive progress color ───────────────────────────────────────────────────
 
 function progressColor(pct: number): { fill: string; glow: string } {
@@ -120,11 +104,17 @@ function Sheet({
   open,
   onClose,
   label,
+  variant = "sheet",
   children,
 }: {
   open: boolean;
   onClose: () => void;
   label: string;
+  // "dialog" renders this as a centered, max-width modal instead of a
+  // bottom-docked sheet — used by Student Purchases, which (along with Book
+  // Details and Book Metrics) was converted away from the bottom-sheet
+  // pattern. Recent Sales / Payout Requests keep the default "sheet".
+  variant?: "sheet" | "dialog";
   children: React.ReactNode;
 }) {
   useEffect(() => {
@@ -138,6 +128,31 @@ function Sheet({
     };
   }, [open]);
 
+  const panel = (
+    <div
+      role="dialog"
+      aria-modal
+      aria-label={label}
+      onClick={variant === "dialog" ? (e) => e.stopPropagation() : undefined}
+      className={
+        variant === "dialog"
+          ? [
+              "flex w-full max-w-md flex-col overflow-hidden rounded-[24px] bg-white shadow-[0_4px_40px_rgba(0,0,0,0.10)]",
+              "transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]",
+              open ? "scale-100 opacity-100" : "pointer-events-none scale-95 opacity-0",
+            ].join(" ")
+          : [
+              "fixed inset-x-0 bottom-[max(1.5rem,env(safe-area-inset-bottom))] z-50 flex flex-col overflow-hidden rounded-[24px] bg-white shadow-[0_-4px_40px_rgba(0,0,0,0.10)]",
+              "transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]",
+              open ? "translate-y-0" : "translate-y-full",
+            ].join(" ")
+      }
+      style={{ maxHeight: "85vh" }}
+    >
+      {children}
+    </div>
+  );
+
   return (
     <>
       <div
@@ -148,19 +163,19 @@ function Sheet({
         onClick={onClose}
         aria-hidden
       />
-      <div
-        role="dialog"
-        aria-modal
-        aria-label={label}
-        className={[
-          "fixed inset-x-0 bottom-0 z-50 flex flex-col overflow-hidden rounded-t-[24px] bg-white shadow-[0_-4px_40px_rgba(0,0,0,0.10)]",
-          "transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]",
-          open ? "translate-y-0" : "translate-y-full",
-        ].join(" ")}
-        style={{ maxHeight: "85vh" }}
-      >
-        {children}
-      </div>
+      {variant === "dialog" ? (
+        <div
+          className={[
+            "fixed inset-0 z-50 flex items-center justify-center p-4",
+            open ? "" : "pointer-events-none",
+          ].join(" ")}
+          onClick={onClose}
+        >
+          {panel}
+        </div>
+      ) : (
+        panel
+      )}
     </>
   );
 }
@@ -191,78 +206,10 @@ function SheetHeader({ title, onClose }: { title: string; onClose: () => void })
 
 // ── 1. Net Revenue Card — silver / titanium ───────────────────────────────────
 
-function NetRevenueCard({ revenue }: { revenue: number }) {
-  return (
-    <div
-      className="relative overflow-hidden rounded-[28px] px-6 py-7 select-none"
-      style={{
-        background: "linear-gradient(160deg, #F9F9F9 0%, #F0F0F0 50%, #E7E7E7 100%)",
-        boxShadow: [
-          "0 8px 32px rgba(0,0,0,0.09)",
-          "0 2px 8px rgba(0,0,0,0.06)",
-          "inset 0 1px 0 rgba(255,255,255,0.92)",
-          "inset 0 -1px 0 rgba(0,0,0,0.04)",
-        ].join(", "),
-      }}
-    >
-      <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-1/2 rounded-t-[28px]"
-        style={{ background: "linear-gradient(180deg, rgba(255,255,255,0.65) 0%, rgba(255,255,255,0) 100%)" }}
-        aria-hidden
-      />
-      <div
-        className="pointer-events-none absolute inset-x-8 top-0 h-px"
-        style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.98), transparent)" }}
-        aria-hidden
-      />
-      <p className="relative text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: "#909090" }}>
-        Current Earnings
-      </p>
-      <p
-        className="relative mt-3 font-bold leading-none"
-        style={{ fontSize: "clamp(30px, 8vw, 40px)", letterSpacing: "-0.025em", color: "#1A1A1A" }}
-      >
-        {naira(revenue)}
-      </p>
-      <p className="relative mt-2.5 text-[12px] leading-relaxed" style={{ color: "#999999" }}>
-        Lifetime earnings after Apex platform fee (8.5%).
-      </p>
-    </div>
-  );
-}
-
-function PayoutSummaryGrid({
-  pendingSettlement,
-  availableNextPayout,
-  lastPayoutDate,
-}: {
-  pendingSettlement: number;
-  availableNextPayout: number;
-  lastPayoutDate: string | null;
-}) {
-  const rows = [
-    { label: "Pending Settlement", value: naira(pendingSettlement) },
-    { label: "Available Next Payout", value: naira(availableNextPayout) },
-    { label: "Last Payout Date", value: formatOptionalDate(lastPayoutDate) },
-    { label: "Payout Schedule", value: "Every Saturday" },
-  ];
-
-  return (
-    <div className="overflow-hidden rounded-[18px] border border-[#EAEAEA] bg-white shadow-[0_2px_12px_rgba(0,0,0,0.05)]">
-      {rows.map((row, i) => (
-        <div key={row.label}>
-          <div className="flex items-center justify-between gap-4 px-4 py-3.5">
-            <p className="text-[12px] text-[#64748B]">{row.label}</p>
-            <p className="max-w-[55%] text-right text-[13px] font-semibold text-[#0F172A]">
-              {row.value}
-            </p>
-          </div>
-          {i < rows.length - 1 && <div className="mx-4 border-t border-[#F4F4F5]" />}
-        </div>
-      ))}
-    </div>
-  );
-}
+// AvailableBalanceCard (the hero card) now lives in
+// @/components/lecturer/available-balance-card — shared with the /lecturer
+// dashboard root's hero card so both pages render the balance figures from
+// one source instead of two copies.
 
 // ── 2. Monthly Goal — adaptive color, animated, remaining amount ──────────────
 
@@ -407,7 +354,122 @@ function MonthlyGoalSection({
   );
 }
 
-// ── 3. Action card ────────────────────────────────────────────────────────────
+// ── 3. Sales Overview — inline 7-day revenue chart ────────────────────────────
+
+const CHART_HEIGHT = 120;
+const CHART_DAYS = 7;
+
+interface DayBucket {
+  label: string;
+  revenue: number;
+}
+
+interface SalesAggregate {
+  buckets: DayBucket[];
+  totalRevenue: number;
+  salesCount: number;
+}
+
+// Aggregates by local calendar day (not UTC) so "today"'s bar matches what
+// the lecturer actually sees on their device. Sales outside the window are
+// silently excluded — `revenueByDay` only ever has keys for the last
+// `days` calendar days, so anything older never matches `.has(key)`.
+function aggregateByDay(sales: RecentSale[], days: number): SalesAggregate {
+  const now = new Date();
+  const dayKeys: string[] = [];
+  const revenueByDay = new Map<string, number>();
+
+  for (let i = days - 1; i >= 0; i--) {
+    const key = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i).toDateString();
+    dayKeys.push(key);
+    revenueByDay.set(key, 0);
+  }
+
+  let totalRevenue = 0;
+  let salesCount = 0;
+
+  for (const sale of sales) {
+    const d = new Date(sale.paidAt);
+    const key = new Date(d.getFullYear(), d.getMonth(), d.getDate()).toDateString();
+    if (!revenueByDay.has(key)) continue;
+    revenueByDay.set(key, revenueByDay.get(key)! + sale.amount);
+    totalRevenue += sale.amount;
+    salesCount += 1;
+  }
+
+  const buckets = dayKeys.map((key) => ({
+    label: new Date(key).toLocaleDateString("en-NG", { weekday: "short" }),
+    revenue: revenueByDay.get(key) ?? 0,
+  }));
+
+  return { buckets, totalRevenue, salesCount };
+}
+
+function SalesOverviewSection({ sales }: { sales: RecentSale[] }) {
+  const { buckets, totalRevenue, salesCount } = useMemo(
+    () => aggregateByDay(sales, CHART_DAYS),
+    [sales],
+  );
+  const avgSale = salesCount > 0 ? totalRevenue / salesCount : 0;
+  const hasEnoughData = salesCount >= 2;
+  const maxRevenue = Math.max(...buckets.map((b) => b.revenue), 1);
+
+  return (
+    <div className="rounded-[22px] border border-[#EAEAEA] bg-white px-5 py-5 shadow-[0_2px_16px_rgba(0,0,0,0.06)]">
+      <p className="mb-4 text-[14px] font-semibold text-[#0F172A]">Sales Overview</p>
+
+      <p className="text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: "#909090" }}>
+        Revenue · Last 7 Days
+      </p>
+      <p
+        className="mt-1 font-bold leading-none"
+        style={{ fontSize: "28px", letterSpacing: "-0.02em", color: "#1A1A1A" }}
+      >
+        {naira(totalRevenue)}
+      </p>
+
+      {hasEnoughData ? (
+        <div className="mt-4 flex items-end gap-2" style={{ height: CHART_HEIGHT }}>
+          {buckets.map((bucket, i) => (
+            <div key={i} className="flex h-full flex-1 flex-col items-center justify-end">
+              <div
+                className="w-full max-w-[28px] rounded-t-[5px] rounded-b-[2px] bg-[#16A34A]"
+                style={{ height: Math.max(4, (bucket.revenue / maxRevenue) * CHART_HEIGHT) }}
+              />
+              <p className="mt-2 text-[10px] font-medium text-[#94A3B8]">{bucket.label}</p>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div
+          className="mt-4 flex flex-col items-center justify-center rounded-[16px] border border-[#EAEAEA] bg-[#FAFAFA] px-6 text-center"
+          style={{ height: CHART_HEIGHT }}
+        >
+          <p className="text-[13px] text-[#94A3B8]">
+            Sales data will appear here as purchases come in.
+          </p>
+        </div>
+      )}
+
+      <div className="mt-[18px] grid grid-cols-3 divide-x divide-[#EAEAEA] overflow-hidden rounded-[18px] border border-[#EAEAEA]">
+        <div className="flex flex-col items-center px-3 py-5">
+          <p className="text-[15px] font-bold leading-none text-[#0F172A]">{naira(totalRevenue)}</p>
+          <p className="mt-1.5 text-[11px] text-[#94A3B8]">Revenue</p>
+        </div>
+        <div className="flex flex-col items-center px-3 py-5">
+          <p className="text-[15px] font-bold leading-none text-[#0F172A]">{salesCount}</p>
+          <p className="mt-1.5 text-[11px] text-[#94A3B8]">Sales</p>
+        </div>
+        <div className="flex flex-col items-center px-3 py-5">
+          <p className="text-[15px] font-bold leading-none text-[#0F172A]">{naira(avgSale)}</p>
+          <p className="mt-1.5 text-[11px] text-[#94A3B8]">Avg. Sale</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── 4. Action card ────────────────────────────────────────────────────────────
 
 function ActionCard({
   icon: Icon,
@@ -545,23 +607,26 @@ function BookDetailModal({
         aria-hidden
       />
 
-      {/* Sheet */}
+      {/* Centered dialog */}
+      <div
+        className={[
+          "fixed inset-0 z-[60] flex items-center justify-center p-4",
+          open ? "" : "pointer-events-none",
+        ].join(" ")}
+        onClick={onClose}
+      >
       <div
         role="dialog"
         aria-modal
         aria-label="Book Details"
+        onClick={(e) => e.stopPropagation()}
         className={[
-          "fixed inset-x-0 bottom-0 z-[60] flex flex-col overflow-hidden rounded-t-[24px] bg-white shadow-[0_-4px_40px_rgba(0,0,0,0.12)]",
-          "transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]",
-          open ? "translate-y-0" : "translate-y-full",
+          "flex w-full max-w-md flex-col overflow-hidden rounded-[24px] bg-white shadow-[0_4px_40px_rgba(0,0,0,0.12)]",
+          "transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]",
+          open ? "scale-100 opacity-100" : "pointer-events-none scale-95 opacity-0",
         ].join(" ")}
         style={{ maxHeight: "85vh" }}
       >
-        {/* Handle */}
-        <div className="flex flex-shrink-0 justify-center pt-3 pb-1">
-          <div className="h-1 w-10 rounded-full bg-[#E2E8F0]" />
-        </div>
-
         {/* Header */}
         <div className="flex flex-shrink-0 items-center justify-between border-b border-[#F4F4F5] px-5 py-3">
           <h3 className="text-[16px] font-semibold text-[#0F172A]">Book Details</h3>
@@ -662,6 +727,7 @@ function BookDetailModal({
           )}
         </div>
       </div>
+      </div>
 
       {/* Toast */}
       <div
@@ -729,8 +795,7 @@ function StudentPurchasesModal({
 
   return (
     <>
-      <Sheet open={open} onClose={onClose} label="Student Purchases">
-        <SheetHandle />
+      <Sheet open={open} onClose={onClose} label="Student Purchases" variant="dialog">
         <SheetHeader title="Student Purchases" onClose={onClose} />
 
         {/* Search bar — sticky below header */}
@@ -796,70 +861,6 @@ function StudentPurchasesModal({
   );
 }
 
-// ── Modal: Recent Sales ───────────────────────────────────────────────────────
-
-function RecentSalesModal({
-  sales,
-  open,
-  onClose,
-}: {
-  sales: RecentSale[];
-  open: boolean;
-  onClose: () => void;
-}) {
-  return (
-    <Sheet open={open} onClose={onClose} label="Recent Sales">
-      <SheetHandle />
-      <SheetHeader title="Recent Sales" onClose={onClose} />
-
-      <div
-        className="min-h-0 flex-1 overflow-y-auto pb-10"
-        style={{ WebkitOverflowScrolling: "touch" } as React.CSSProperties}
-      >
-        {sales.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 py-16 text-center">
-            <ShoppingBag className="h-8 w-8 text-[#CBD5E1]" aria-hidden />
-            <p className="text-[13px] text-[#94A3B8]">No sales yet</p>
-          </div>
-        ) : (
-          sales.map((sale, i) => (
-            <div key={`${sale.paidAt}-${i}`}>
-              <div className="flex items-center gap-3 px-5 py-4">
-                <div
-                  className="relative flex-shrink-0 overflow-hidden rounded-[8px] bg-[#F0F1F3]"
-                  style={{ width: 40, height: 53 }}
-                >
-                  {coverUrl(sale.bookId, sale.coverImageKey) ? (
-                    <Image
-                      src={coverUrl(sale.bookId, sale.coverImageKey)!}
-                      alt={sale.bookTitle}
-                      fill
-                      sizes="40px"
-                      className="object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center">
-                      <BookOpen className="h-4 w-4 text-[#C0C7D4]" aria-hidden />
-                    </div>
-                  )}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-[13px] font-semibold text-[#0F172A]">{sale.bookTitle}</p>
-                  <p className="mt-0.5 text-[12px] text-[#94A3B8]">{relativeTime(sale.paidAt)}</p>
-                </div>
-                <p className="flex-shrink-0 text-[14px] font-semibold text-[#16A34A]">
-                  +{naira(sale.amount)}
-                </p>
-              </div>
-              {i < sales.length - 1 && <div className="mx-5 border-t border-[#F4F4F5]" />}
-            </div>
-          ))
-        )}
-      </div>
-    </Sheet>
-  );
-}
-
 // ── Modal: Payout Requests ────────────────────────────────────────────────────
 
 function PayoutRequestsModal({
@@ -911,22 +912,18 @@ function PayoutRequestsModal({
 
 // ── Main export ───────────────────────────────────────────────────────────────
 
-type ModalKey = "purchases" | "sales" | "withdrawals" | null;
+type ModalKey = "purchases" | "withdrawals" | null;
 
 export function EarningsPageClient({ data }: { data: EarningsData }) {
   const {
-    totalNetRevenue,
     currentMonthRevenue,
     currentMonthName,
     pendingSettlement,
     availableNextPayout,
-    lastPayoutDate,
     studentPurchases,
     withdrawals,
   } = data;
   const [modal, setModal] = useState<ModalKey>(null);
-
-  const recentSales = useMemo(() => studentPurchases, [studentPurchases]);
 
   return (
     <>
@@ -941,12 +938,9 @@ export function EarningsPageClient({ data }: { data: EarningsData }) {
         </header>
 
         <div className="space-y-4">
-          <NetRevenueCard revenue={totalNetRevenue} />
-
-          <PayoutSummaryGrid
-            pendingSettlement={pendingSettlement}
-            availableNextPayout={availableNextPayout}
-            lastPayoutDate={lastPayoutDate}
+          <AvailableBalanceCard
+            availableBalance={availableNextPayout}
+            settling={pendingSettlement}
           />
 
           <MonthlyGoalSection
@@ -954,19 +948,14 @@ export function EarningsPageClient({ data }: { data: EarningsData }) {
             monthName={currentMonthName}
           />
 
+          <SalesOverviewSection sales={studentPurchases} />
+
           <ActionCard
             icon={Users}
             title="Student Purchases"
             description="See everyone who purchased your textbooks"
             count={studentPurchases.length}
             onClick={() => setModal("purchases")}
-          />
-          <ActionCard
-            icon={ShoppingBag}
-            title="Recent Sales"
-            description="View your latest sales activity"
-            count={recentSales.length}
-            onClick={() => setModal("sales")}
           />
           <ActionCard
             icon={Wallet}
@@ -981,11 +970,6 @@ export function EarningsPageClient({ data }: { data: EarningsData }) {
       <StudentPurchasesModal
         purchases={studentPurchases}
         open={modal === "purchases"}
-        onClose={() => setModal(null)}
-      />
-      <RecentSalesModal
-        sales={recentSales}
-        open={modal === "sales"}
         onClose={() => setModal(null)}
       />
       <PayoutRequestsModal

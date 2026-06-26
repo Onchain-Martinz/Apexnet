@@ -68,7 +68,7 @@ function BottomSheet({
         aria-modal
         aria-label={title}
         className={[
-          "fixed inset-x-0 bottom-0 z-50 flex flex-col rounded-t-[24px] bg-white shadow-[0_-4px_40px_rgba(0,0,0,0.10)]",
+          "fixed inset-x-0 bottom-[max(1.5rem,env(safe-area-inset-bottom))] z-50 flex flex-col rounded-[24px] bg-white shadow-[0_-4px_40px_rgba(0,0,0,0.10)]",
           "transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]",
           open ? "translate-y-0" : "translate-y-full",
         ].join(" ")}
