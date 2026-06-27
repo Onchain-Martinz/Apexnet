@@ -20,7 +20,7 @@ const LEVELS = [
   { value: "500", label: "500 Level" },
 ];
 
-const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
+const MAX_FILE_SIZE = 500 * 1024 * 1024; // 500 MB
 const MAX_COVER_SIZE = 5 * 1024 * 1024; // 5 MB
 const COVER_ACCEPT = ["image/jpeg", "image/png", "image/webp"];
 
@@ -122,7 +122,7 @@ function PdfDropZone({
             <p className="text-[14px] font-medium text-foreground">
               Tap to select PDF
             </p>
-            <p className="text-[12px] text-muted-foreground">PDF only · max 50 MB</p>
+            <p className="text-[12px] text-muted-foreground">PDF only · max 500 MB</p>
           </div>
         </button>
       )}
@@ -328,7 +328,7 @@ function validate(fields: Fields, pdfFile: File | null): Errors {
   } else if (pdfFile.type !== "application/pdf") {
     errs.pdf = "File must be a PDF";
   } else if (pdfFile.size > MAX_FILE_SIZE) {
-    errs.pdf = "File must be under 50 MB";
+    errs.pdf = "File must be under 500 MB";
   }
 
   return errs;

@@ -6,7 +6,7 @@ import { captureException } from "@/lib/monitoring";
 import { normalizeCourseCode } from "@/lib/textbooks/course-code";
 import { isValidTextbookPrice } from "@/lib/validations/textbook";
 
-const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
+const MAX_FILE_SIZE = 500 * 1024 * 1024; // 500 MB
 const MAX_COVER_SIZE = 5 * 1024 * 1024; // 5 MB
 const COVER_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
@@ -121,7 +121,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "File must be a PDF" }, { status: 422 });
   }
   if (file.size > MAX_FILE_SIZE) {
-    return NextResponse.json({ error: "File must be under 50 MB" }, { status: 422 });
+    return NextResponse.json({ error: "File must be under 500 MB" }, { status: 422 });
   }
 
   if (coverFile && coverFile.size > 0) {

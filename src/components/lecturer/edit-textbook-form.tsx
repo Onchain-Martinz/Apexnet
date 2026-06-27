@@ -20,7 +20,7 @@ const LEVELS = [
   { value: "500", label: "500 Level" },
 ];
 
-const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
+const MAX_FILE_SIZE = 500 * 1024 * 1024; // 500 MB
 const MAX_COVER_SIZE = 5 * 1024 * 1024; // 5 MB
 const COVER_ACCEPT = ["image/jpeg", "image/png", "image/webp"];
 
@@ -272,7 +272,7 @@ export function EditTextbookForm({
       return;
     }
     if (file.size > MAX_FILE_SIZE) {
-      setErrors((prev) => ({ ...prev, pdf: "File must be under 50 MB" }));
+      setErrors((prev) => ({ ...prev, pdf: "File must be under 500 MB" }));
       return;
     }
     setPdfFile(file);
