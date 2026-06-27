@@ -12,38 +12,45 @@
 @layer base {
   :root {
     /* ── Surfaces ─────────────────────────────────── */
-    --background:           0 0% 100%;        /* #FFFFFF */
-    --background-subtle:    220 14% 97%;      /* #F9FAFB — auth page bg */
-    --foreground:           221 39% 11%;      /* #111827 — primary text  */
+    /* Dark-first palette (Phase 1) — Apple Liquid Glass direction.
+       All values stay as bare HSL components (no hsl() wrapper baked in)
+       so existing Tailwind opacity modifiers (bg-muted/40, bg-primary/10,
+       etc. — confirmed in use across admin/lecturer pages) keep working
+       unchanged. True glass translucency/blur is layered on top via
+       explicit utilities on the specific named surfaces (nav, modals,
+       hero cards, marketing hero), not baked into these base tokens. */
+    --background:           227 65% 5%;       /* #050816 */
+    --background-subtle:    224 52% 8%;       /* #0A1020 — secondary surface / auth page bg */
+    --foreground:           0 0% 100%;        /* #FFFFFF — primary text */
 
     /* ── Card ─────────────────────────────────────── */
-    --card:                 0 0% 100%;        /* #FFFFFF */
-    --card-foreground:      221 39% 11%;      /* #111827 */
-    --card-border:          220 14% 96%;      /* #F3F4F6 */
+    --card:                 224 35% 12%;       /* solid elevated surface, one step up from background */
+    --card-foreground:      0 0% 100%;
+    --card-border:          220 25% 26%;       /* solid equivalent of rgba(255,255,255,0.08) on this surface */
 
-    /* ── Primary action (dark, not blue) ─────────── */
-    --primary:              221 39% 11%;      /* #111827 */
-    --primary-foreground:   0 0% 100%;        /* #FFFFFF */
+    /* ── Primary action — Apex blue accent (new) ──── */
+    --primary:              243 88% 62%;       /* #3D40F3 */
+    --primary-foreground:   0 0% 100%;
 
     /* ── Muted ────────────────────────────────────── */
-    --muted:                220 14% 96%;      /* #F3F4F6 */
-    --muted-foreground:     220 9% 46%;       /* #6B7280 — secondary text */
+    --muted:                224 30% 15%;       /* solid equivalent of the "glass surface" tone */
+    --muted-foreground:     220 20% 78%;       /* solid equivalent of "Secondary Text" rgba(255,255,255,0.80) */
 
-    /* ── Semantic ─────────────────────────────────── */
+    /* ── Semantic (unchanged — already matched the spec) ─ */
     --success:              160 84% 39%;      /* #10B981 */
     --success-foreground:   0 0% 100%;
     --warning:              38 92% 50%;       /* #F59E0B */
-    --warning-foreground:   221 39% 11%;
+    --warning-foreground:   227 65% 5%;
     --destructive:          0 84% 60%;        /* #EF4444 */
     --destructive-foreground: 0 0% 100%;
 
     /* ── Borders & inputs ─────────────────────────── */
-    --border:               220 13% 91%;      /* #E5E7EB */
-    --input:                220 13% 91%;
-    --ring:                 221 39% 11%;      /* focus ring = primary */
+    --border:               220 25% 24%;      /* solid equivalent of rgba(255,255,255,0.08) */
+    --input:                224 30% 15%;      /* dark input fill — same "glass surface" tone as --muted */
+    --ring:                 243 88% 62%;      /* focus ring = accent blue */
 
     /* ── Border radii (Apex spec) ─────────────────── */
-    --radius-card:          20px;
+    --radius-card:          24px;             /* 24px per Liquid Glass spec (was 20px) */
     --radius-button:        14px;
     --radius-input:         14px;
     --radius-nav:           24px;             /* active nav pill */
@@ -79,6 +86,25 @@
 }
 
 @layer utilities {
+  /* ── Liquid Glass surfaces ───────────────────────
+     Applied selectively (Phase 1 scope): bottom nav, modals/dialogs/
+     sheets, marketing hero. NOT applied to ordinary cards app-wide —
+     those use the solid --card token above. */
+  .glass-surface {
+    background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
+    -webkit-backdrop-filter: blur(24px);
+    backdrop-filter: blur(24px);
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+  }
+  .glass-surface-elevated {
+    background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.05));
+    -webkit-backdrop-filter: blur(32px);
+    backdrop-filter: blur(32px);
+    border: 1px solid rgba(255,255,255,0.10);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+  }
+
   /* ── Safe area helpers ──────────────────────────── */
   .pb-safe      { padding-bottom: var(--safe-bottom); }
   .pt-safe      { padding-top: var(--safe-top); }

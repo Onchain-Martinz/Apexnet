@@ -102,10 +102,16 @@ const config: Config = {
         "safe-bottom": "env(safe-area-inset-bottom, 0px)",
       },
 
-      // ── Shadows (spec: shadow-sm only) ──────────────
+      // ── Shadows ──────────────────────────────────────
+      // Dark-theme values: the original light-mode shadows (e.g.
+      // 0 1px 2px rgb(0 0 0 / 0.04)) are functionally invisible against the
+      // new near-black background — a darkening shadow needs much higher
+      // opacity/blur to register at all once the page itself is dark.
       boxShadow: {
-        sm:   "0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.04)",
-        card: "0 1px 2px 0 rgb(0 0 0 / 0.04)",
+        sm:    "0 1px 3px 0 rgb(0 0 0 / 0.3), 0 1px 2px -1px rgb(0 0 0 / 0.2)",
+        card:  "0 8px 32px rgba(0,0,0,0.35)",
+        glass: "0 8px 32px rgba(0,0,0,0.35)",
+        glow:  "0 0 0 3px rgba(61,64,243,0.25), 0 0 24px rgba(61,64,243,0.25)",
       },
 
       // ── Animations ──────────────────────────────────

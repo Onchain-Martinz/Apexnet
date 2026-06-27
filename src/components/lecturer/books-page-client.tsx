@@ -54,9 +54,9 @@ function formatDate(iso: string): string {
 // ── Status pill ───────────────────────────────────────────────────────────────
 
 const STATUS_STYLES: Record<BookItem["status"], string> = {
-  PUBLISHED: "bg-[#DCFCE7] text-[#16A34A]",
-  DRAFT:     "bg-[#F4F4F5] text-[#71717A]",
-  ARCHIVED:  "bg-[#FEE2E2] text-[#DC2626]",
+  PUBLISHED: "bg-success/10 text-success",
+  DRAFT:     "bg-muted text-muted-foreground",
+  ARCHIVED:  "bg-destructive/10 text-destructive",
 };
 
 const STATUS_LABELS: Record<BookItem["status"], string> = {
@@ -87,7 +87,7 @@ function SegmentedControl({
   onChange: (v: Tab) => void;
 }) {
   return (
-    <div className="flex w-full rounded-[14px] bg-[#F0F1F3] p-1">
+    <div className="flex w-full rounded-[14px] bg-muted p-1">
       {(["my-books", "d-library"] as Tab[]).map((tab) => (
         <button
           key={tab}
@@ -96,8 +96,8 @@ function SegmentedControl({
           className={[
             "flex-1 rounded-[10px] py-2.5 text-[13px] font-semibold transition-all duration-200",
             value === tab
-              ? "bg-white text-[#0F172A] shadow-[0_1px_4px_rgba(0,0,0,0.12)]"
-              : "text-[#64748B]",
+              ? "bg-card text-foreground shadow-sm"
+              : "text-muted-foreground",
           ].join(" ")}
         >
           {tab === "my-books" ? "My Books" : "D-Library"}
@@ -155,22 +155,22 @@ function MetricsSheet({
         aria-label="Book Metrics"
         onClick={(e) => e.stopPropagation()}
         className={[
-          "flex w-full max-w-md flex-col overflow-hidden rounded-[24px] bg-white shadow-[0_4px_40px_rgba(0,0,0,0.10)]",
+          "flex w-full max-w-md flex-col overflow-hidden rounded-[24px] glass-surface-elevated",
           "transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]",
           open ? "scale-100 opacity-100" : "pointer-events-none scale-95 opacity-0",
         ].join(" ")}
         style={{ maxHeight: "85vh" }}
       >
         {/* Header — fixed */}
-        <div className="flex flex-shrink-0 items-center justify-between border-b border-[#F4F4F5] px-5 py-3">
-          <h3 className="text-[16px] font-semibold text-[#0F172A]">Book Metrics</h3>
+        <div className="flex flex-shrink-0 items-center justify-between border-b border-border px-5 py-3">
+          <h3 className="text-[16px] font-semibold text-foreground">Book Metrics</h3>
           <button
             type="button"
             onClick={onClose}
-            className="flex h-7 w-7 items-center justify-center rounded-full bg-[#F4F4F5] transition-colors duration-100 active:bg-[#E5E7EB]"
+            className="flex h-7 w-7 items-center justify-center rounded-full bg-muted transition-colors duration-100 active:bg-muted/60"
             aria-label="Close"
           >
-            <X className="h-4 w-4 text-[#64748B]" />
+            <X className="h-4 w-4 text-muted-foreground" />
           </button>
         </div>
 
@@ -180,65 +180,65 @@ function MetricsSheet({
             <>
               {/* Book title */}
               <div className="px-5 pt-5 pb-4">
-                <p className="line-clamp-2 text-[15px] font-semibold leading-snug text-[#0F172A]">
+                <p className="line-clamp-2 text-[15px] font-semibold leading-snug text-foreground">
                   {book.title}
                 </p>
               </div>
 
               {/* Quick stats — 3 columns */}
-              <div className="mx-5 overflow-hidden rounded-[18px] border border-[#EAEAEA]">
-                <div className="grid grid-cols-3 divide-x divide-[#EAEAEA]">
+              <div className="mx-5 overflow-hidden rounded-[18px] border border-card-border">
+                <div className="grid grid-cols-3 divide-x divide-card-border">
                   <div className="flex flex-col items-center px-3 py-5">
-                    <p className="text-[15px] font-bold leading-none text-[#0F172A]">
+                    <p className="text-[15px] font-bold leading-none text-foreground">
                       {naira(book.metrics.totalRevenue)}
                     </p>
-                    <p className="mt-1.5 text-[11px] text-[#94A3B8]">Revenue</p>
+                    <p className="mt-1.5 text-[11px] text-muted-foreground">Revenue</p>
                   </div>
                   <div className="flex flex-col items-center px-3 py-5">
-                    <p className="text-[15px] font-bold leading-none text-[#0F172A]">
+                    <p className="text-[15px] font-bold leading-none text-foreground">
                       {book.metrics.salesCount}
                     </p>
-                    <p className="mt-1.5 text-[11px] text-[#94A3B8]">Sales</p>
+                    <p className="mt-1.5 text-[11px] text-muted-foreground">Sales</p>
                   </div>
                   <div className="flex flex-col items-center px-3 py-5">
-                    <p className="text-center text-[12px] font-bold leading-tight text-[#0F172A]">
+                    <p className="text-center text-[12px] font-bold leading-tight text-foreground">
                       {book.metrics.lastSaleAt ? formatDate(book.metrics.lastSaleAt) : "—"}
                     </p>
-                    <p className="mt-1.5 text-[11px] text-[#94A3B8]">Last Sale</p>
+                    <p className="mt-1.5 text-[11px] text-muted-foreground">Last Sale</p>
                   </div>
                 </div>
               </div>
 
               {/* Sales history */}
               <div className="px-5 pt-6">
-                <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.09em] text-[#94A3B8]">
+                <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.09em] text-muted-foreground">
                   Sales History
                 </p>
 
                 {book.metrics.sales.length === 0 ? (
-                  <div className="flex flex-col items-center gap-3 rounded-[18px] border border-[#EAEAEA] px-6 py-10 text-center">
-                    <BookOpen className="h-8 w-8 text-[#CBD5E1]" aria-hidden />
-                    <p className="text-[13px] text-[#94A3B8]">No purchases yet</p>
+                  <div className="flex flex-col items-center gap-3 rounded-[18px] border border-card-border px-6 py-10 text-center">
+                    <BookOpen className="h-8 w-8 text-muted-foreground" aria-hidden />
+                    <p className="text-[13px] text-muted-foreground">No purchases yet</p>
                   </div>
                 ) : (
-                  <div className="overflow-hidden rounded-[18px] border border-[#EAEAEA]">
+                  <div className="overflow-hidden rounded-[18px] border border-card-border">
                     {book.metrics.sales.map((sale, i) => (
                       <div key={`${sale.paidAt}-${i}`}>
                         <div className="flex items-center justify-between gap-3 px-4 py-3.5">
                           <div className="min-w-0 flex-1">
-                            <p className="truncate text-[13px] font-semibold text-[#0F172A]">
+                            <p className="truncate text-[13px] font-semibold text-foreground">
                               {sale.studentName ?? "Anonymous"}
                             </p>
-                            <p className="mt-0.5 text-[12px] text-[#94A3B8]">
+                            <p className="mt-0.5 text-[12px] text-muted-foreground">
                               {formatDate(sale.paidAt)}
                             </p>
                           </div>
-                          <p className="flex-shrink-0 text-[13px] font-semibold text-[#16A34A]">
+                          <p className="flex-shrink-0 text-[13px] font-semibold text-success">
                             +{naira(sale.amount)}
                           </p>
                         </div>
                         {i < book.metrics.sales.length - 1 && (
-                          <div className="mx-4 border-t border-[#F4F4F5]" />
+                          <div className="mx-4 border-t border-border" />
                         )}
                       </div>
                     ))}
@@ -277,7 +277,7 @@ function PublishAction({ textbookId }: { textbookId: string }) {
       type="button"
       onClick={handlePublish}
       disabled={loading}
-      className="flex h-8 flex-1 items-center justify-center rounded-[8px] bg-[#07132A] text-[11px] font-semibold text-white transition-all duration-150 active:scale-[0.97] disabled:opacity-50"
+      className="flex h-8 flex-1 items-center justify-center rounded-[8px] bg-primary text-[11px] font-semibold text-primary-foreground transition-all duration-150 active:scale-[0.97] disabled:opacity-50"
     >
       {loading ? "…" : "Publish"}
     </button>
@@ -297,10 +297,10 @@ function BookCard({
   const priceLabel = price === 0 ? "Free" : nairaWhole(price);
 
   return (
-    <div className="flex flex-col overflow-hidden rounded-[18px] border border-[#EAEAEA] bg-white shadow-[0_2px_16px_rgba(0,0,0,0.07)]">
+    <div className="flex flex-col overflow-hidden rounded-[18px] border border-card-border bg-card shadow-card">
 
       {/* ── Cover — fills card width, 3:4 ratio ── */}
-      <div className="relative w-full bg-[#F0F1F3]" style={{ aspectRatio: "3 / 4" }}>
+      <div className="relative w-full bg-muted" style={{ aspectRatio: "3 / 4" }}>
         {coverUrl(id, coverImageKey) ? (
           <Image
             src={coverUrl(id, coverImageKey)!}
@@ -311,7 +311,7 @@ function BookCard({
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center">
-            <BookOpen className="h-10 w-10 text-[#C0C7D4]" aria-hidden />
+            <BookOpen className="h-10 w-10 text-muted-foreground" aria-hidden />
           </div>
         )}
 
@@ -327,11 +327,11 @@ function BookCard({
 
       {/* ── Info ── */}
       <div className="flex flex-1 flex-col gap-2 px-3 pt-3 pb-1">
-        <p className="line-clamp-2 text-[13px] font-semibold leading-snug text-[#0F172A]">
+        <p className="line-clamp-2 text-[13px] font-semibold leading-snug text-foreground">
           {title}
         </p>
         <div className="flex items-center justify-between gap-1">
-          <p className="text-[12px] font-medium text-[#475569]">{priceLabel}</p>
+          <p className="text-[12px] font-medium text-muted-foreground">{priceLabel}</p>
           {status === "PUBLISHED" && <StatusPill status={status} />}
         </div>
       </div>
@@ -341,7 +341,7 @@ function BookCard({
         {/* Read Book — always present */}
         <Link
           href={routes.textbookReader(id)}
-          className="flex h-8 flex-1 items-center justify-center rounded-[8px] bg-[#07132A] text-[11px] font-semibold text-white transition-all duration-150 active:scale-[0.97]"
+          className="flex h-8 flex-1 items-center justify-center rounded-[8px] bg-primary text-[11px] font-semibold text-primary-foreground transition-all duration-150 active:scale-[0.97]"
         >
           Read
         </Link>
@@ -349,7 +349,7 @@ function BookCard({
         {/* Edit — lecturer may edit their own textbook regardless of status */}
         <Link
           href={routes.lecturer.editTextbook(id)}
-          className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[8px] border border-[#E2E8F0] bg-white text-[#64748B] transition-all duration-150 active:scale-[0.97]"
+          className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[8px] border border-border bg-card text-muted-foreground transition-all duration-150 active:scale-[0.97]"
           aria-label="Edit Textbook"
         >
           <Pencil className="h-3.5 w-3.5" aria-hidden />
@@ -362,7 +362,7 @@ function BookCard({
           <button
             type="button"
             onClick={onViewMetrics}
-            className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[8px] border border-[#E2E8F0] bg-white text-[#64748B] transition-all duration-150 active:scale-[0.97]"
+            className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[8px] border border-border bg-card text-muted-foreground transition-all duration-150 active:scale-[0.97]"
             aria-label="View Metrics"
           >
             <BarChart3 className="h-3.5 w-3.5" aria-hidden />
@@ -378,18 +378,18 @@ function BookCard({
 function EmptyBooks() {
   return (
     <div className="flex flex-col items-center gap-5 px-6 py-16 text-center">
-      <div className="flex h-16 w-16 items-center justify-center rounded-[20px] bg-[#F4F5F7]">
-        <BookOpen className="h-8 w-8 text-[#94A3B8]" aria-hidden />
+      <div className="flex h-16 w-16 items-center justify-center rounded-[20px] bg-muted">
+        <BookOpen className="h-8 w-8 text-muted-foreground" aria-hidden />
       </div>
       <div className="space-y-1.5">
-        <p className="text-[17px] font-semibold text-[#0F172A]">No books yet</p>
-        <p className="text-[13px] leading-relaxed text-[#64748B]">
+        <p className="text-[17px] font-semibold text-foreground">No books yet</p>
+        <p className="text-[13px] leading-relaxed text-muted-foreground">
           Upload your first textbook and start earning
         </p>
       </div>
       <Link
         href={routes.lecturer.newTextbook}
-        className="inline-flex h-11 items-center rounded-[12px] bg-[#07132A] px-6 text-[14px] font-semibold text-white transition-all duration-150 active:scale-[0.97]"
+        className="inline-flex h-11 items-center rounded-[12px] bg-primary px-6 text-[14px] font-semibold text-primary-foreground transition-all duration-150 active:scale-[0.97]"
       >
         Upload a Textbook
       </Link>
@@ -400,12 +400,12 @@ function EmptyBooks() {
 function EmptyDLibrary() {
   return (
     <div className="flex flex-col items-center gap-5 px-6 py-16 text-center">
-      <div className="flex h-16 w-16 items-center justify-center rounded-[20px] bg-[#F4F5F7]">
-        <BookOpen className="h-8 w-8 text-[#94A3B8]" aria-hidden />
+      <div className="flex h-16 w-16 items-center justify-center rounded-[20px] bg-muted">
+        <BookOpen className="h-8 w-8 text-muted-foreground" aria-hidden />
       </div>
       <div className="space-y-1.5">
-        <p className="text-[17px] font-semibold text-[#0F172A]">No books in the library</p>
-        <p className="text-[13px] leading-relaxed text-[#64748B]">
+        <p className="text-[17px] font-semibold text-foreground">No books in the library</p>
+        <p className="text-[13px] leading-relaxed text-muted-foreground">
           Published textbooks from all lecturers will appear here
         </p>
       </div>
@@ -438,7 +438,7 @@ export function BooksPageClient({
         {/* ── Header ───────────────────────────────────────────── */}
         <header className="mb-6 flex items-center justify-between">
           <h1
-            className="font-bold leading-none tracking-tight text-[#0F172A]"
+            className="font-bold leading-none tracking-tight text-foreground"
             style={{ fontSize: "clamp(22px, 6vw, 28px)" }}
           >
             Books
@@ -446,7 +446,7 @@ export function BooksPageClient({
           {activeTab === "my-books" && (
             <Link
               href={routes.lecturer.newTextbook}
-              className="flex h-9 items-center gap-1.5 rounded-[10px] bg-[#07132A] px-3 text-[13px] font-semibold text-white transition-all duration-150 active:scale-[0.97]"
+              className="flex h-9 items-center gap-1.5 rounded-[10px] bg-primary px-3 text-[13px] font-semibold text-primary-foreground transition-all duration-150 active:scale-[0.97]"
             >
               <Plus className="h-3.5 w-3.5" aria-hidden />
               New Book
@@ -479,7 +479,7 @@ export function BooksPageClient({
         {/* ── D-Library ─────────────────────────────────────────── */}
         {activeTab === "d-library" && (
           <div>
-            <p className="mb-4 text-[13px] text-[#94A3B8]">
+            <p className="mb-4 text-[13px] text-muted-foreground">
               Browse all published textbooks from lecturers across Apex
             </p>
             {dLibraryBooks.length === 0 ? (

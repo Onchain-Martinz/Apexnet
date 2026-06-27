@@ -26,7 +26,7 @@ export default async function AdminStudentDetailPage({
       createdAt: true,
       studentProfile: {
         select: {
-          matricNumber: true,
+          studentIdNumber: true,
           level: true,
           university: { select: { name: true } },
           department: { select: { name: true } },
@@ -90,9 +90,12 @@ export default async function AdminStudentDetailPage({
           </p>
         </div>
         <div>
-          <p className="text-[13px] text-muted-foreground">Matric Number</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+            Identification
+          </p>
+          <p className="mt-1 text-[13px] text-muted-foreground">Matric / JAMB Number</p>
           <p className="text-[15px] font-semibold text-foreground">
-            {student.studentProfile?.matricNumber ?? "—"}
+            {student.studentProfile?.studentIdNumber ?? "—"}
           </p>
         </div>
         <div>

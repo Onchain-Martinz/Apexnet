@@ -77,11 +77,11 @@ function groupByDate(items: ActivityItemData[]): DateGroup[] {
 // ── Pill ───────────────────────────────────────────────────────────────────────
 
 const PILL_STYLES: Record<string, string> = {
-  neutral:     "bg-[#F4F4F5] text-[#71717A]",
-  success:     "bg-[#DCFCE7] text-[#16A34A]",
-  destructive: "bg-[#FEE2E2] text-[#DC2626]",
-  amount:      "bg-[#DCFCE7] text-[#16A34A]",
-  primary:     "bg-[#EEF2FF] text-[#4F46E5]",
+  neutral:     "bg-muted text-muted-foreground",
+  success:     "bg-success/10 text-success",
+  destructive: "bg-destructive/10 text-destructive",
+  amount:      "bg-success/10 text-success",
+  primary:     "bg-primary/10 text-primary",
 };
 
 function Pill({ text, variant }: { text: string; variant: string }) {
@@ -112,18 +112,18 @@ function ActivityRow({ item }: { item: ActivityItemData }) {
   const Icon = ACTIVITY_ICONS[item.type] ?? BookOpen;
   return (
     <div className="flex items-center gap-3 py-3.5">
-      <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-[#F8F9FA]">
-        <Icon className="h-[18px] w-[18px] text-[#64748B]" aria-hidden />
+      <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-muted">
+        <Icon className="h-[18px] w-[18px] text-muted-foreground" aria-hidden />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[13px] font-semibold leading-snug text-[#0F172A]">
+        <p className="truncate text-[13px] font-semibold leading-snug text-foreground">
           {item.label}
         </p>
-        <p className="mt-0.5 truncate text-[12px] text-[#64748B]">{item.detail}</p>
+        <p className="mt-0.5 truncate text-[12px] text-muted-foreground">{item.detail}</p>
       </div>
       <div className="flex flex-shrink-0 flex-col items-end gap-1">
         {item.pill && <Pill text={item.pill.text} variant={item.pill.variant} />}
-        <p className="text-[11px] text-[#94A3B8]">{relativeTime(item.date)}</p>
+        <p className="text-[11px] text-muted-foreground">{relativeTime(item.date)}</p>
       </div>
     </div>
   );
@@ -133,19 +133,19 @@ function ActivityRow({ item }: { item: ActivityItemData }) {
 
 function EmptyActivity() {
   return (
-    <div className="flex flex-col items-center gap-4 rounded-[18px] border border-[#EAEAEA] bg-white px-6 py-10 text-center">
-      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F8F9FA]">
-        <BookOpen className="h-6 w-6 text-[#94A3B8]" aria-hidden />
+    <div className="flex flex-col items-center gap-4 rounded-[18px] border border-card-border bg-card px-6 py-10 text-center">
+      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted">
+        <BookOpen className="h-6 w-6 text-muted-foreground" aria-hidden />
       </div>
       <div className="space-y-1">
-        <p className="text-[15px] font-semibold text-[#0F172A]">No activity yet</p>
-        <p className="text-[13px] text-[#64748B]">
+        <p className="text-[15px] font-semibold text-foreground">No activity yet</p>
+        <p className="text-[13px] text-muted-foreground">
           Publish your first textbook to start earning
         </p>
       </div>
       <Link
         href={routes.lecturer.newTextbook}
-        className="inline-flex h-10 items-center rounded-[10px] bg-[#07132A] px-5 text-[13px] font-semibold text-white transition-all duration-150 active:scale-[0.97]"
+        className="inline-flex h-10 items-center rounded-[10px] bg-primary px-5 text-[13px] font-semibold text-primary-foreground transition-all duration-150 active:scale-[0.97]"
       >
         Upload textbook
       </Link>
@@ -195,7 +195,7 @@ function ActivityBottomSheet({
         aria-modal
         aria-label="Activity History"
         className={[
-          "fixed inset-x-0 bottom-[max(1.5rem,env(safe-area-inset-bottom))] z-50 flex flex-col rounded-[24px] bg-white shadow-[0_-4px_40px_rgba(0,0,0,0.10)]",
+          "fixed inset-x-0 bottom-[max(1.5rem,env(safe-area-inset-bottom))] z-50 flex flex-col rounded-[24px] glass-surface-elevated",
           "transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]",
           open ? "translate-y-0" : "translate-y-full",
         ].join(" ")}
@@ -203,30 +203,30 @@ function ActivityBottomSheet({
       >
         {/* Drag handle — fixed */}
         <div className="flex flex-shrink-0 justify-center pt-3 pb-1">
-          <div className="h-1 w-10 rounded-full bg-[#E2E8F0]" />
+          <div className="h-1 w-10 rounded-full bg-foreground/20" />
         </div>
 
         {/* Header — fixed */}
-        <div className="flex flex-shrink-0 items-center justify-between border-b border-[#F4F4F5] px-5 py-3">
-          <h3 className="text-[16px] font-semibold text-[#0F172A]">Activity History</h3>
+        <div className="flex flex-shrink-0 items-center justify-between border-b border-border px-5 py-3">
+          <h3 className="text-[16px] font-semibold text-foreground">Activity History</h3>
           <button
             type="button"
             onClick={onClose}
-            className="flex h-7 w-7 items-center justify-center rounded-full bg-[#F4F4F5] transition-colors duration-100 active:bg-[#E5E7EB]"
+            className="flex h-7 w-7 items-center justify-center rounded-full bg-muted transition-colors duration-100 active:bg-muted/60"
             aria-label="Close"
           >
-            <X className="h-4 w-4 text-[#64748B]" />
+            <X className="h-4 w-4 text-muted-foreground" />
           </button>
         </div>
 
         {/* Scrollable content — flex-1 fills remaining space, min-h-0 enables scroll */}
         <div className="min-h-0 flex-1 overflow-y-auto pb-10">
           {groups.length === 0 ? (
-            <p className="py-16 text-center text-[14px] text-[#94A3B8]">No activity yet</p>
+            <p className="py-16 text-center text-[14px] text-muted-foreground">No activity yet</p>
           ) : (
             groups.map((group) => (
               <div key={group.label}>
-                <p className="px-5 pb-1 pt-5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#94A3B8]">
+                <p className="px-5 pb-1 pt-5 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                   {group.label}
                 </p>
                 {group.items.map((item, i) => (
@@ -235,7 +235,7 @@ function ActivityBottomSheet({
                       <ActivityRow item={item} />
                     </div>
                     {i < group.items.length - 1 && (
-                      <div className="mx-5 border-t border-[#F4F4F5]" />
+                      <div className="mx-5 border-t border-border" />
                     )}
                   </div>
                 ))}
@@ -263,14 +263,14 @@ export function ActivitySection({ activity }: { activity: ActivityItemData[] }) 
 
   return (
     <>
-      <div className="overflow-hidden rounded-[18px] border border-[#EAEAEA] bg-white shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
+      <div className="overflow-hidden rounded-[18px] border border-card-border bg-card shadow-card">
         {feedItems.map((item, index) => (
           <div key={`${item.type}-${item.detail}-${index}`}>
             <div className="px-4">
               <ActivityRow item={item} />
             </div>
             {index < feedItems.length - 1 && (
-              <div className="mx-4 border-t border-[#F4F4F5]" />
+              <div className="mx-4 border-t border-border" />
             )}
           </div>
         ))}
@@ -279,7 +279,7 @@ export function ActivitySection({ activity }: { activity: ActivityItemData[] }) 
       <button
         type="button"
         onClick={() => setSheetOpen(true)}
-        className="mt-3 flex items-center gap-1 text-[13px] font-medium text-[#64748B] transition-colors duration-150 hover:text-[#0F172A]"
+        className="mt-3 flex items-center gap-1 text-[13px] font-medium text-muted-foreground transition-colors duration-150 hover:text-foreground"
       >
         View all activity
         <ChevronRight className="h-3.5 w-3.5" aria-hidden />

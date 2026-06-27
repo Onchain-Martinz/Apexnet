@@ -186,17 +186,17 @@ export function BankVerificationPanel({ initial }: { initial: BankVerificationDa
               onFocus={() => setShowBankResults(true)}
               disabled={verifying || banksLoading}
               className={cn(
-                "h-12 w-full rounded-input border bg-background pl-11 pr-4",
+                "h-12 w-full rounded-input border bg-input pl-11 pr-4",
                 "text-[16px] sm:text-[15px] text-foreground placeholder:text-muted-foreground",
                 "transition-all duration-150",
-                "focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-foreground",
+                "focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-primary focus:shadow-glow",
                 "border-border",
               )}
             />
           </div>
 
           {showBankResults && (
-            <div className="max-h-56 overflow-y-auto rounded-input border border-border bg-background divide-y divide-border">
+            <div className="max-h-56 overflow-y-auto rounded-input border border-border bg-card divide-y divide-border">
               {filteredBanks.length === 0 ? (
                 <p className="px-4 py-3 text-[13px] text-muted-foreground">No banks found</p>
               ) : (

@@ -1,7 +1,7 @@
 export const siteConfig = {
-  name: "Apex",
+  name: "ApexNet",
   tagline: "Your university library. In your pocket.",
   description:
-    "A mobile-first digital textbook platform built for African universities.",
+    "ApexNet is the digital textbook platform connecting students and lecturers through organized knowledge.",
   url: process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
 } as const;

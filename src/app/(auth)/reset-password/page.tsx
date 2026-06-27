@@ -218,7 +218,7 @@ function ResetPasswordForm() {
                 onChange={(e) => handleDigitChange(index, e.target.value)}
                 onKeyDown={(e) => handleKeyDown(index, e)}
                 disabled={submitting}
-                className="h-14 w-12 rounded-input border border-border bg-background text-center text-xl font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-foreground transition-all duration-150"
+                className="h-14 w-12 rounded-input border border-border bg-input text-center text-xl font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-primary focus:shadow-glow transition-all duration-150"
               />
             ))}
           </div>

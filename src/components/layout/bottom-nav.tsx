@@ -67,10 +67,12 @@ export function BottomNav() {
     <nav
       aria-label="Main navigation"
       className={cn(
-        "fixed bottom-0 inset-x-0 z-50",
-        // No fixed height — outer nav grows to wrap inner bar + iOS safe area
-        "bg-background border-t border-border",
-        "pb-[env(safe-area-inset-bottom,0px)]",
+        // Floating glass pill — inset from the edges and bottom (instead of
+        // the previous full-bleed flush bar), capped at a max width so it
+        // doesn't stretch edge-to-edge on larger screens.
+        "fixed inset-x-4 z-50 mx-auto max-w-md",
+        "bottom-[max(1rem,calc(env(safe-area-inset-bottom,0px)+0.75rem))]",
+        "rounded-nav glass-surface",
       )}
     >
       {/* Inner bar: 72px exactly — content is vertically centred here */}

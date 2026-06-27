@@ -24,9 +24,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     ].join(" ");
 
     const variants = {
-      primary: "bg-primary text-primary-foreground hover:bg-primary/90",
+      primary: "bg-gradient-to-br from-[#6366F1] to-[#8B5CF6] text-primary-foreground hover:shadow-glow",
       ghost:   "bg-transparent text-foreground hover:bg-muted",
-      outline: "border border-border bg-background text-foreground hover:bg-muted",
+      outline: "border border-white/10 bg-white/[0.05] text-foreground hover:bg-white/[0.08]",
     };
 
     const sizes = {

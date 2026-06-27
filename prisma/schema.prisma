@@ -162,17 +162,17 @@ model PasswordResetOtp {
 }
 
 model StudentProfile {
-  id           String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId       String      @unique @db.Uuid
-  universityId String?     @db.Uuid
-  departmentId String?     @db.Uuid
-  level        Int?
-  matricNumber String?     @unique
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
-  department   Department? @relation(fields: [departmentId], references: [id])
-  university   University? @relation(fields: [universityId], references: [id])
-  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id              String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId          String      @unique @db.Uuid
+  universityId    String?     @db.Uuid
+  departmentId    String?     @db.Uuid
+  level           Int?
+  studentIdNumber String?     @unique @map("matricNumber")
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  department      Department? @relation(fields: [departmentId], references: [id])
+  university      University? @relation(fields: [universityId], references: [id])
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([universityId])
   @@index([departmentId])
@@ -225,7 +225,7 @@ model Textbook {
   level           Int?
   totalPages      Int?
   fileSizeBytes   BigInt?
-  price           Int               // Whole Naira only — no Kobo/decimals. See normalizeCourseCode-style validator in src/lib/validations/textbook.ts.
+  price           Int // Whole Naira only — no Kobo/decimals. See normalizeCourseCode-style validator in src/lib/validations/textbook.ts.
   isFree          Boolean           @default(false)
   status          TextbookStatus    @default(DRAFT)
   createdAt       DateTime          @default(now())

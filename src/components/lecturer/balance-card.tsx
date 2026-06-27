@@ -23,7 +23,7 @@ export function BalanceCard({ availableBalance, settling, bankDetails }: Balance
     <>
       <AvailableBalanceCard theme="dark" availableBalance={availableBalance} settling={settling}>
         {/* Separator */}
-        <div className="mt-4 mb-4 border-t border-white/[0.08]" />
+        <div className="mt-4 mb-4 border-t border-foreground/[0.08]" />
 
         {/* CTA — fit-content action chip, not full-width banner */}
         <button
@@ -35,7 +35,7 @@ export function BalanceCard({ availableBalance, settling, bankDetails }: Balance
             paddingInline: "24px",
             paddingBlock: "12px",
             background: hasBalance ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.10)",
-            color: hasBalance ? "#07132A" : "rgba(255,255,255,0.38)",
+            color: hasBalance ? "hsl(var(--background))" : "rgba(255,255,255,0.38)",
           }}
         >
           Send Request
@@ -43,7 +43,7 @@ export function BalanceCard({ availableBalance, settling, bankDetails }: Balance
         </button>
 
         {/* Schedule footnote */}
-        <p className="mt-3 text-[12px] text-white/35">Payouts processed every Saturday</p>
+        <p className="mt-3 text-[12px] text-foreground/35">Payouts processed every Saturday</p>
       </AvailableBalanceCard>
 
       <WithdrawalModal

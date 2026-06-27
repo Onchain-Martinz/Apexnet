@@ -7,7 +7,7 @@ import { Providers } from "@/components/providers";
 
 export const metadata: Metadata = {
   title: {
-    default: siteConfig.name,
+    default: "ApexNet — Knowledge. Connected.",
     template: `%s — ${siteConfig.name}`,
   },
   description: siteConfig.description,
@@ -15,7 +15,14 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_NG",
-    title: siteConfig.name,
+    siteName: siteConfig.name,
+    url: siteConfig.url,
+    title: "ApexNet — Knowledge. Connected.",
+    description: siteConfig.description,
+  },
+  twitter: {
+    card: "summary",
+    title: "ApexNet — Knowledge. Connected.",
     description: siteConfig.description,
   },
   manifest: "/manifest.json",
@@ -29,10 +36,9 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#0d1117" },
-  ],
+  // Dark-first design (Phase 1) — single theme-color regardless of system
+  // preference, matching the new --background token.
+  themeColor: "#050816",
 };
 
 export default function RootLayout({

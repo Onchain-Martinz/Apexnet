@@ -22,7 +22,7 @@ const profileSelect = {
   avatarUrl: true,
   studentProfile: {
     select: {
-      matricNumber: true,
+      studentIdNumber: true,
       level: true,
       universityId: true,
       departmentId: true,
@@ -39,7 +39,7 @@ function serializeProfile(user: ProfileQueryResult) {
     name: user.name,
     email: user.email,
     avatarUrl: user.avatarUrl,
-    matricNumber: user.studentProfile?.matricNumber ?? null,
+    studentIdNumber: user.studentProfile?.studentIdNumber ?? null,
     level: user.studentProfile?.level ?? null,
     universityId: user.studentProfile?.universityId ?? null,
     universityName: user.studentProfile?.university?.name ?? null,
@@ -72,7 +72,7 @@ export async function GET() {
 }
 
 // ── PATCH /api/student/profile ──────────────────────────────────────────────
-// Updates name/avatar on User, and matric number/level/university/department
+// Updates name/avatar on User, and student ID number/level/university/department
 // on StudentProfile. Email is read-only. University/department are resolved
 // from free-text names (find-or-create), matching the lecturer profile flow.
 
@@ -97,7 +97,7 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.errors[0].message }, { status: 422 });
   }
 
-  const { name, avatarUrl, matricNumber, level, universityName, departmentName } = parsed.data;
+  const { name, avatarUrl, studentIdNumber, level, universityName, departmentName } = parsed.data;
 
   const studentProfile = await db.studentProfile.findUnique({
     where: { userId: session.user.id },
@@ -157,7 +157,7 @@ export async function PATCH(req: NextRequest) {
       db.studentProfile.update({
         where: { id: studentProfile.id },
         data: {
-          matricNumber: matricNumber || null,
+          studentIdNumber: studentIdNumber || null,
           level: level ?? null,
           universityId,
           departmentId,
@@ -166,7 +166,7 @@ export async function PATCH(req: NextRequest) {
     ]);
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-      return NextResponse.json({ error: "Matric number is already in use" }, { status: 422 });
+      return NextResponse.json({ error: "Student ID number is already in use" }, { status: 422 });
     }
     throw error;
   }

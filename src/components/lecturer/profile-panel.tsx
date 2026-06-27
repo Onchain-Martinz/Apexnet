@@ -193,7 +193,7 @@ export function ProfilePanel({
             onChange={(e) => setField("bio", e.target.value)}
             disabled={saving}
             rows={4}
-            className="w-full rounded-input border border-border bg-background px-4 py-3 text-[16px] sm:text-[15px] text-foreground placeholder:text-muted-foreground resize-none transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-foreground"
+            className="w-full rounded-input border border-border bg-input px-4 py-3 text-[16px] sm:text-[15px] text-foreground placeholder:text-muted-foreground resize-none transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-primary focus:shadow-glow"
           />
         </div>
 

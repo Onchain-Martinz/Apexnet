@@ -238,12 +238,12 @@ export default async function LecturerPage() {
       {/* ── Section 1: Header ─────────────────────────────────────────────── */}
       <header className="flex items-start justify-between pt-14 pb-4">
         <div className="space-y-1.5">
-          <p className="text-[13px] font-medium text-[#64748B]">{greeting},</p>
+          <p className="text-[13px] font-medium text-muted-foreground">{greeting},</p>
 
           {/* Row 1: Name + inline certification seal */}
           <div className="flex flex-wrap items-center gap-2">
             <h1
-              className="font-bold text-[#0F172A] leading-none tracking-tight"
+              className="font-bold text-foreground leading-none tracking-tight"
               style={{ fontSize: "clamp(26px, 7vw, 32px)" }}
             >
               {displayName}
@@ -258,10 +258,10 @@ export default async function LecturerPage() {
         {/* Notification bell */}
         <a
           href="#activity"
-          className="mt-1 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border border-[#EAEAEA] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] transition-all duration-150 active:scale-[0.95]"
+          className="mt-1 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border border-border bg-card shadow-card transition-all duration-150 active:scale-[0.95]"
           aria-label="Activity"
         >
-          <Bell className="h-4 w-4 text-[#64748B]" />
+          <Bell className="h-4 w-4 text-muted-foreground" />
         </a>
       </header>
 
@@ -287,26 +287,26 @@ export default async function LecturerPage() {
       <section className="mt-6">
         <Link
           href="/lecturer/books/new"
-          className="flex items-center gap-4 rounded-[18px] border border-[#F0F0F0] bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-all duration-150 active:scale-[0.99]"
+          className="flex items-center gap-4 rounded-[18px] border border-card-border bg-card p-4 shadow-card transition-all duration-150 active:scale-[0.99]"
         >
-          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[12px] bg-[#07132A]">
-            <Plus className="h-5 w-5 text-white" aria-hidden />
+          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[12px] bg-primary">
+            <Plus className="h-5 w-5 text-primary-foreground" aria-hidden />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-[14px] font-semibold text-[#0F172A]">
+            <p className="text-[14px] font-semibold text-foreground">
               Upload a new textbook
             </p>
-            <p className="text-[12px] text-[#64748B] mt-0.5">
+            <p className="text-[12px] text-muted-foreground mt-0.5">
               Share your knowledge and reach more students
             </p>
           </div>
-          <ChevronRight className="h-4 w-4 flex-shrink-0 text-[#94A3B8]" aria-hidden />
+          <ChevronRight className="h-4 w-4 flex-shrink-0 text-muted-foreground" aria-hidden />
         </Link>
       </section>
 
       {/* ── Section 5: Recent Activity ────────────────────────────────────── */}
       <section className="mt-10" id="activity">
-        <h2 className="mb-4 text-[18px] font-bold text-[#0F172A]">Recent Activity</h2>
+        <h2 className="mb-4 text-[18px] font-bold text-foreground">Recent Activity</h2>
         <ActivitySection activity={activityData} />
       </section>
     </div>

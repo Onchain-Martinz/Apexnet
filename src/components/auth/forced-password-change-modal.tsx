@@ -73,7 +73,7 @@ export function ForcedPasswordChangeModal() {
 
   return (
     <div className="fixed inset-0 z-[200] flex items-end justify-center bg-black/50 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:items-center sm:pb-0">
-      <div className="w-full max-w-md rounded-t-card sm:rounded-card border border-card-border bg-card p-card shadow-card">
+      <div className="w-full max-w-md rounded-t-card sm:rounded-card glass-surface-elevated p-card">
         <h2 className="text-[18px] font-bold text-foreground">Set a new password</h2>
         <p className="mt-1.5 text-[13px] text-muted-foreground">
           Your account was created with a temporary password. Please change your password to continue.

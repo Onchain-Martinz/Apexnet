@@ -19,8 +19,6 @@ import { cn } from "@/lib/utils/cn";
 import { routes } from "@/config/routes";
 import { HeroMockup, LecturerMockup, StudentMockup } from "@/components/marketing/landing-mockups";
 
-const NAVY = "#071330";
-
 export const metadata: Metadata = {
   title: "Apex — Your School Books, Finally Organized",
   description:
@@ -31,7 +29,7 @@ export const metadata: Metadata = {
 
 const buttonBase =
   "inline-flex h-14 items-center justify-center gap-2 rounded-button px-6 text-[15px] font-semibold transition-all duration-200 touch-target active:scale-[0.97]";
-const primaryButton = cn(buttonBase, "text-white hover:opacity-90");
+const primaryButton = cn(buttonBase, "bg-gradient-to-br from-[#6366F1] to-[#8B5CF6] text-white hover:shadow-glow");
 const outlineButton = cn(buttonBase, "border border-border bg-background text-foreground hover:bg-muted");
 const invertedButton = cn(buttonBase, "bg-white hover:bg-white/90");
 const ghostOnDarkButton = cn(buttonBase, "border border-white/25 text-white hover:bg-white/10");
@@ -138,7 +136,7 @@ export default function HomePage() {
           </p>
 
           <div className="mt-8 flex w-full max-w-md flex-col gap-3 sm:w-auto sm:flex-row">
-            <Link href={routes.signup} className={primaryButton} style={{ backgroundColor: NAVY }}>
+            <Link href={routes.signup} className={primaryButton}>
               Get Started
             </Link>
             <Link href="/textbooks" className={outlineButton}>
@@ -152,7 +150,7 @@ export default function HomePage() {
                 key={item}
                 className="flex items-center justify-center gap-2 text-[13px] text-muted-foreground sm:justify-start"
               >
-                <Check className="h-4 w-4 flex-shrink-0" style={{ color: NAVY }} aria-hidden />
+                <Check className="h-4 w-4 flex-shrink-0 text-primary" aria-hidden />
                 {item}
               </li>
             ))}
@@ -199,8 +197,8 @@ export default function HomePage() {
                 key={title}
                 className="rounded-card border border-card-border bg-card p-card shadow-card transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm"
               >
-                <div className="flex h-10 w-10 items-center justify-center rounded-[12px]" style={{ backgroundColor: `${NAVY}0F` }}>
-                  <Icon className="h-5 w-5" style={{ color: NAVY }} aria-hidden />
+                <div className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-primary/10">
+                  <Icon className="h-5 w-5 text-primary" aria-hidden />
                 </div>
                 <h3 className="mt-4 text-[16px] font-semibold text-foreground">{title}</h3>
                 <p className="mt-1.5 text-[14px] leading-relaxed text-muted-foreground">{description}</p>
@@ -222,10 +220,7 @@ export default function HomePage() {
             <div className="grid grid-cols-1 gap-8 md:grid-cols-3 md:items-start md:gap-6">
               {STEPS.map((step, i) => (
                 <div key={step.title} className="relative flex flex-col items-center text-center">
-                  <div
-                    className="relative z-10 flex h-12 w-12 items-center justify-center rounded-full text-[15px] font-semibold text-white shadow-sm"
-                    style={{ backgroundColor: NAVY }}
-                  >
+                  <div className="relative z-10 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-[15px] font-semibold text-primary-foreground shadow-sm">
                     {i + 1}
                   </div>
                   <h3 className="mt-4 text-[16px] font-semibold text-foreground">{step.title}</h3>
@@ -250,7 +245,7 @@ export default function HomePage() {
             <ul className="mt-6 space-y-4">
               {STUDENT_FEATURES.map((feature) => (
                 <li key={feature.title} className="flex gap-3">
-                  <Check className="mt-0.5 h-4 w-4 flex-shrink-0" style={{ color: NAVY }} aria-hidden />
+                  <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" aria-hidden />
                   <div>
                     <p className="text-[15px] font-semibold text-foreground">{feature.title}</p>
                     <p className="mt-0.5 text-[14px] leading-relaxed text-muted-foreground">{feature.description}</p>
@@ -277,7 +272,7 @@ export default function HomePage() {
             <ul className="mt-6 space-y-4">
               {LECTURER_FEATURES.map((feature) => (
                 <li key={feature.title} className="flex gap-3">
-                  <Check className="mt-0.5 h-4 w-4 flex-shrink-0" style={{ color: NAVY }} aria-hidden />
+                  <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" aria-hidden />
                   <div>
                     <p className="text-[15px] font-semibold text-foreground">{feature.title}</p>
                     <p className="mt-0.5 text-[14px] leading-relaxed text-muted-foreground">{feature.description}</p>
@@ -304,7 +299,7 @@ export default function HomePage() {
                 key={title}
                 className="rounded-card border border-card-border bg-card p-card shadow-card transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm"
               >
-                <Icon className="h-6 w-6" style={{ color: NAVY }} aria-hidden />
+                <Icon className="h-6 w-6 text-primary" aria-hidden />
                 <h3 className="mt-4 text-[15px] font-semibold text-foreground">{title}</h3>
                 <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">{description}</p>
               </div>
@@ -316,8 +311,8 @@ export default function HomePage() {
       {/* ── Section 8: Early University Vision ───────────────────────────── */}
       <section className="border-t border-border px-5 py-16 sm:py-24">
         <div className="mx-auto flex w-full max-w-2xl flex-col items-center text-center">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full" style={{ backgroundColor: `${NAVY}0F` }}>
-            <Wallet className="h-5 w-5" style={{ color: NAVY }} aria-hidden />
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+            <Wallet className="h-5 w-5 text-primary" aria-hidden />
           </div>
           <h2 className="mt-5 text-[1.75rem] font-bold tracking-tight text-foreground sm:text-[2.25rem]">
             The future of campus publishing.
@@ -329,15 +324,15 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── Section 9: Final CTA ──────────────────────────────────────────── */}
-      <section className="px-5 py-16 sm:py-24" style={{ backgroundColor: NAVY }}>
+      {/* ── Section 9: Final CTA — marketing hero, Liquid Glass treatment ─── */}
+      <section className="bg-gradient-to-br from-[#3D40F3] via-[#5457FF] to-[#8B5CF6] px-5 py-16 sm:py-24">
         <div className="mx-auto flex w-full max-w-3xl flex-col items-center text-center">
           <h2 className="text-[1.75rem] font-bold tracking-tight text-white sm:text-[2.25rem]">
             Start building your academic library today.
           </h2>
 
           <div className="mt-8 flex w-full max-w-md flex-col gap-3 sm:w-auto sm:flex-row">
-            <Link href={routes.signup} className={invertedButton} style={{ color: NAVY }}>
+            <Link href={routes.signup} className={cn(invertedButton, "text-primary")}>
               Create Account
             </Link>
             <Link href="/textbooks" className={ghostOnDarkButton}>

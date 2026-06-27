@@ -34,7 +34,7 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
         onClick={onClose}
         aria-hidden
       />
-      <div className="relative w-full max-w-md rounded-t-card sm:rounded-card border border-card-border bg-card p-card shadow-card">
+      <div className="relative w-full max-w-md rounded-t-card sm:rounded-card glass-surface-elevated p-card">
         {title && (
           <div className="mb-element flex items-center justify-between">
             <h2 className="text-[18px] font-bold text-foreground">{title}</h2>

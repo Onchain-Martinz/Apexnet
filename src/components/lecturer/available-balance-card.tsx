@@ -6,9 +6,11 @@ const naira = (amount: number) =>
 interface AvailableBalanceCardProps {
   availableBalance: number;
   settling: number;
-  // "light" — earnings-page silver/gradient card, self-contained, no extra content.
-  // "dark" — dashboard navy hero card (shimmer + glows), with a slot for the
+  // "light" — earnings-page card, self-contained, no extra content.
+  // "dark" — dashboard hero card (shimmer + glows), with a slot for the
   // caller's own CTA/footnote so it stays inside the same rounded box.
+  // Both are dark-theme glass surfaces (Phase 2) — "dark" is the more
+  // elevated/decorated of the two, matching their original relative weight.
   theme?: "light" | "dark";
   children?: React.ReactNode;
 }
@@ -34,19 +36,7 @@ export function AvailableBalanceCard({
           }
         `}</style>
 
-        <div
-          className="relative overflow-hidden rounded-[30px] pt-5 px-7 pb-5 transition-transform duration-200 active:scale-[0.99] select-none mx-[-12px]"
-          style={{
-            background: "#07132A",
-            boxShadow: [
-              "0 8px 40px rgba(7,19,42,0.16)",
-              "0 2px 8px rgba(7,19,42,0.10)",
-              "inset 0 1px 0 rgba(255,255,255,0.08)",
-              "inset 0 -1px 0 rgba(0,0,0,0.18)",
-              "inset 0 0 60px rgba(0,0,20,0.22)",
-            ].join(", "),
-          }}
-        >
+        <div className="glass-surface-elevated relative overflow-hidden rounded-[30px] pt-5 px-7 pb-5 transition-transform duration-200 active:scale-[0.99] select-none mx-[-12px]">
           {/* Shimmer sweep */}
           <div className="apx-shimmer pointer-events-none absolute inset-y-0 w-[45%] bg-gradient-to-r from-transparent via-white/[0.08] to-transparent" />
 
@@ -59,11 +49,11 @@ export function AvailableBalanceCard({
             }}
           />
 
-          {/* Secondary glow — bottom-left */}
+          {/* Secondary glow — bottom-left, tinted with the Phase 1 accent blue */}
           <div
             className="pointer-events-none absolute -left-12 -bottom-12 h-48 w-48 rounded-full"
             style={{
-              background: "radial-gradient(circle, rgba(90,110,220,0.35) 0%, transparent 65%)",
+              background: "radial-gradient(circle, rgba(61,64,243,0.35) 0%, transparent 65%)",
               opacity: 0.45,
             }}
           />
@@ -91,20 +81,20 @@ export function AvailableBalanceCard({
           </div>
 
           {/* Label */}
-          <p className="text-[11px] font-semibold tracking-[0.13em] uppercase text-white/45 mb-2">
+          <p className="text-[11px] font-semibold tracking-[0.13em] uppercase text-foreground/45 mb-2">
             Available Balance
           </p>
 
           {/* Amount */}
           <p
-            className="font-bold leading-none text-white"
+            className="font-bold leading-none text-foreground"
             style={{ fontSize: "clamp(32px, 9vw, 42px)", letterSpacing: "-0.03em" }}
           >
             {naira(availableBalance)}
           </p>
 
           {/* Settling */}
-          <p className="text-[13px] text-white/40 mt-1.5">
+          <p className="text-[13px] text-foreground/40 mt-1.5">
             {naira(settling)} settling
           </p>
 
@@ -115,38 +105,17 @@ export function AvailableBalanceCard({
   }
 
   return (
-    <div
-      className="relative overflow-hidden rounded-[28px] px-6 py-7 select-none"
-      style={{
-        background: "linear-gradient(160deg, #F9F9F9 0%, #F0F0F0 50%, #E7E7E7 100%)",
-        boxShadow: [
-          "0 8px 32px rgba(0,0,0,0.09)",
-          "0 2px 8px rgba(0,0,0,0.06)",
-          "inset 0 1px 0 rgba(255,255,255,0.92)",
-          "inset 0 -1px 0 rgba(0,0,0,0.04)",
-        ].join(", "),
-      }}
-    >
-      <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-1/2 rounded-t-[28px]"
-        style={{ background: "linear-gradient(180deg, rgba(255,255,255,0.65) 0%, rgba(255,255,255,0) 100%)" }}
-        aria-hidden
-      />
-      <div
-        className="pointer-events-none absolute inset-x-8 top-0 h-px"
-        style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.98), transparent)" }}
-        aria-hidden
-      />
-      <p className="relative text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: "#909090" }}>
+    <div className="glass-surface relative overflow-hidden rounded-[28px] px-6 py-7 select-none">
+      <p className="relative text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
         Available Balance
       </p>
       <p
-        className="relative mt-3 font-bold leading-none"
-        style={{ fontSize: "clamp(30px, 8vw, 40px)", letterSpacing: "-0.025em", color: "#1A1A1A" }}
+        className="relative mt-3 font-bold leading-none text-foreground"
+        style={{ fontSize: "clamp(30px, 8vw, 40px)", letterSpacing: "-0.025em" }}
       >
         {naira(availableBalance)}
       </p>
-      <p className="relative mt-2.5 text-[12px] leading-relaxed" style={{ color: "#999999" }}>
+      <p className="relative mt-2.5 text-[12px] leading-relaxed text-muted-foreground">
         {naira(settling)} settling
       </p>
       {children}

@@ -3,10 +3,16 @@
 import { useEffect, useState } from "react";
 import { useFlutterwave, closePaymentModal, FlutterWaveTypes } from "flutterwave-react-v3";
 import { routes } from "@/config/routes";
+import { Button } from "@/components/ui/button";
 
 // ── Buy Now button (actual implementation) ──────────────────────────────────
 // Calls /api/purchases/initialize to create a PENDING purchase row, then opens
-// the Flutterwave Inline SDK modal (card, bank transfer, USSD, account).
+// the Flutterwave Inline SDK modal scoped to whichever method the student
+// picked (Bank Transfer primary, Card secondary — see PaymentMethod below).
+// Flutterwave's own payment_options has no documented "default selected
+// method" — the only lever it exposes is which methods are included at all
+// — so each button opens the modal restricted to just its own method instead
+// of one shared list with everything available.
 // Flutterwave handles all credential collection — Apex never sees card/bank data.
 // On success, browser redirects to the purchase callback page for verification.
 //
@@ -14,16 +20,19 @@ import { routes } from "@/config/routes";
 // see that file for why. Do not import this file directly; import BuyButton
 // from "./buy-button" instead.
 
+type PaymentMethod = "banktransfer" | "card";
+
 interface CheckoutData {
   txRef: string;
   amount: number;
   email: string;
+  method: PaymentMethod;
 }
 
 const APP_LOGO = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/logo.png`;
 
 export function BuyButton({ textbookId }: { textbookId: string }) {
-  const [loading, setLoading] = useState(false);
+  const [loadingMethod, setLoadingMethod] = useState<PaymentMethod | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [checkoutData, setCheckoutData] = useState<CheckoutData | null>(null);
 
@@ -32,7 +41,7 @@ export function BuyButton({ textbookId }: { textbookId: string }) {
     tx_ref: checkoutData?.txRef ?? "pending",
     amount: checkoutData?.amount ?? 0,
     currency: "NGN",
-    payment_options: "card, account, ussd, banktransfer",
+    payment_options: checkoutData?.method ?? "banktransfer",
     customer: {
       email: checkoutData?.email ?? "",
       phone_number: "",
@@ -60,20 +69,20 @@ export function BuyButton({ textbookId }: { textbookId: string }) {
             `&status=${response.status}`;
         } else {
           setError("Payment was not completed. Please try again.");
-          setLoading(false);
+          setLoadingMethod(null);
           setCheckoutData(null);
         }
       },
       onClose: () => {
-        setLoading(false);
+        setLoadingMethod(null);
         setCheckoutData(null);
       },
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [checkoutData]);
 
-  async function handleClick() {
-    setLoading(true);
+  async function startCheckout(method: PaymentMethod) {
+    setLoadingMethod(method);
     setError(null);
 
     try {
@@ -87,14 +96,14 @@ export function BuyButton({ textbookId }: { textbookId: string }) {
 
       if (!res.ok) {
         setError(data.error ?? "Could not start checkout. Please try again.");
-        setLoading(false);
+        setLoadingMethod(null);
         return;
       }
 
-      setCheckoutData({ txRef: data.txRef, amount: data.amount, email: data.email });
+      setCheckoutData({ txRef: data.txRef, amount: data.amount, email: data.email, method });
     } catch {
       setError("Could not start checkout. Please try again.");
-      setLoading(false);
+      setLoadingMethod(null);
     }
   }
 
@@ -102,12 +111,25 @@ export function BuyButton({ textbookId }: { textbookId: string }) {
     <div className="space-y-2">
       <button
         type="button"
-        onClick={handleClick}
-        disabled={loading}
+        onClick={() => startCheckout("banktransfer")}
+        disabled={loadingMethod !== null}
         className="flex h-14 w-full items-center justify-center rounded-button bg-primary text-[15px] font-semibold text-primary-foreground transition-all duration-150 active:scale-[0.97] disabled:opacity-60"
       >
-        {loading ? "Opening checkout…" : "Buy Now"}
+        {loadingMethod === "banktransfer" ? "Opening checkout…" : "Pay with Bank Transfer"}
       </button>
+
+      <Button
+        type="button"
+        variant="outline"
+        size="lg"
+        className="w-full"
+        onClick={() => startCheckout("card")}
+        loading={loadingMethod === "card"}
+        disabled={loadingMethod !== null}
+      >
+        Pay with Card
+      </Button>
+
       {error && <p className="text-[13px] text-destructive">{error}</p>}
     </div>
   );

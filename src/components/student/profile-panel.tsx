@@ -11,7 +11,7 @@ type ProfileData = {
   name: string;
   email: string;
   avatarUrl: string;
-  matricNumber: string;
+  studentIdNumber: string;
   level: number | null;
   university: string;
   department: string;
@@ -25,6 +25,16 @@ function InfoRow({ label, value }: { label: string; value: string }) {
       <p className="text-[13px] text-muted-foreground">{label}</p>
       <p className="text-[15px] font-semibold text-foreground">{value || "—"}</p>
     </div>
+  );
+}
+
+// ── Sub-section eyebrow label (groups rows within the existing card) ────────
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+      {children}
+    </p>
   );
 }
 
@@ -74,7 +84,7 @@ export function StudentProfilePanel() {
           name: data.profile.name ?? "",
           email: data.profile.email ?? "",
           avatarUrl: data.profile.avatarUrl ?? "",
-          matricNumber: data.profile.matricNumber ?? "",
+          studentIdNumber: data.profile.studentIdNumber ?? "",
           level: data.profile.level ?? null,
           university: data.profile.universityName ?? "",
           department: data.profile.departmentName ?? "",
@@ -129,7 +139,7 @@ export function StudentProfilePanel() {
         body: JSON.stringify({
           name: draft.name,
           avatarUrl: draft.avatarUrl,
-          matricNumber: draft.matricNumber,
+          studentIdNumber: draft.studentIdNumber,
           level: draft.level,
           universityName: draft.university,
           departmentName: draft.department,
@@ -147,7 +157,7 @@ export function StudentProfilePanel() {
         name: data.profile.name ?? "",
         email: data.profile.email ?? "",
         avatarUrl: data.profile.avatarUrl ?? "",
-        matricNumber: data.profile.matricNumber ?? "",
+        studentIdNumber: data.profile.studentIdNumber ?? "",
         level: data.profile.level ?? null,
         university: data.profile.universityName ?? "",
         department: data.profile.departmentName ?? "",
@@ -210,52 +220,61 @@ export function StudentProfilePanel() {
 
         <Input label="Email" id="email" value={draft.email} disabled readOnly hint="Email cannot be changed" />
 
-        <Input
-          label="Matric Number"
-          id="matricNumber"
-          placeholder="e.g. 190405123"
-          value={draft.matricNumber}
-          onChange={(e) => setField("matricNumber", e.target.value)}
-          disabled={saving}
-        />
+        <div className="space-y-element">
+          <SectionLabel>Academic Information</SectionLabel>
 
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="level" className="text-[13px] font-medium text-foreground">
-            Level
-          </label>
-          <select
-            id="level"
-            value={draft.level ?? ""}
-            onChange={(e) => setField("level", e.target.value ? Number(e.target.value) : null)}
+          <Input
+            label="University"
+            id="university"
+            placeholder="e.g. University of Lagos"
+            value={draft.university}
+            onChange={(e) => setField("university", e.target.value)}
             disabled={saving}
-            className="h-12 w-full rounded-input border border-border bg-background px-4 text-[16px] sm:text-[15px] text-foreground transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-foreground"
-          >
-            <option value="">Select level</option>
-            {LEVELS.map((level) => (
-              <option key={level} value={level}>
-                {level} Level
-              </option>
-            ))}
-          </select>
+          />
+
+          <Input
+            label="Department"
+            id="department"
+            placeholder="e.g. Computer Science"
+            value={draft.department}
+            onChange={(e) => setField("department", e.target.value)}
+            disabled={saving}
+          />
+
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="level" className="text-[13px] font-medium text-foreground">
+              Level
+            </label>
+            <select
+              id="level"
+              value={draft.level ?? ""}
+              onChange={(e) => setField("level", e.target.value ? Number(e.target.value) : null)}
+              disabled={saving}
+              className="h-12 w-full rounded-input border border-border bg-input px-4 text-[16px] sm:text-[15px] text-foreground transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-primary focus:shadow-glow"
+            >
+              <option value="">Select level</option>
+              {LEVELS.map((level) => (
+                <option key={level} value={level}>
+                  {level} Level
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
-        <Input
-          label="University"
-          id="university"
-          placeholder="e.g. University of Lagos"
-          value={draft.university}
-          onChange={(e) => setField("university", e.target.value)}
-          disabled={saving}
-        />
+        <div className="space-y-element">
+          <SectionLabel>Identification</SectionLabel>
 
-        <Input
-          label="Department"
-          id="department"
-          placeholder="e.g. Computer Science"
-          value={draft.department}
-          onChange={(e) => setField("department", e.target.value)}
-          disabled={saving}
-        />
+          <Input
+            label="Matric / JAMB Number"
+            id="studentIdNumber"
+            placeholder="e.g. IMSU/2024/12345"
+            hint="Enter your Matric Number. If you do not yet have one, enter your JAMB Registration Number."
+            value={draft.studentIdNumber}
+            onChange={(e) => setField("studentIdNumber", e.target.value)}
+            disabled={saving}
+          />
+        </div>
 
         {error && (
           <div className="rounded-input border border-destructive/30 bg-destructive/5 px-4 py-3">
@@ -299,11 +318,18 @@ export function StudentProfilePanel() {
         </div>
       </section>
 
-      <section className="space-y-element rounded-card border border-card-border bg-card p-card shadow-card">
-        <InfoRow label="Matric Number" value={saved.matricNumber} />
-        <InfoRow label="Level" value={saved.level ? `${saved.level} Level` : ""} />
-        <InfoRow label="University" value={saved.university} />
-        <InfoRow label="Department" value={saved.department} />
+      <section className="space-y-section rounded-card border border-card-border bg-card p-card shadow-card">
+        <div className="space-y-element">
+          <SectionLabel>Academic Information</SectionLabel>
+          <InfoRow label="University" value={saved.university} />
+          <InfoRow label="Department" value={saved.department} />
+          <InfoRow label="Level" value={saved.level ? `${saved.level} Level` : ""} />
+        </div>
+
+        <div className="space-y-element">
+          <SectionLabel>Identification</SectionLabel>
+          <InfoRow label="Matric / JAMB Number" value={saved.studentIdNumber} />
+        </div>
       </section>
 
       <div className="flex gap-element">

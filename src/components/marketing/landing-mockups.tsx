@@ -1,22 +1,20 @@
 import { BookOpen, CheckCircle2, TrendingUp, Wallet } from "lucide-react";
 
 // Marketing-only visuals — static, illustrative, no live data. Built from the
-// same card/button/progress patterns used throughout the dashboard, with a
-// navy (#071330) accent specific to the landing page.
-
-const NAVY = "#071330";
+// same card/button/progress patterns used throughout the dashboard, with the
+// Apex accent blue (--primary) used for the brand-colored details.
 
 // ── Hero mockup — a phone frame around a textbook detail screen ────────────
 
 export function HeroMockup() {
   return (
     <div className="mx-auto w-[250px] sm:w-[270px]">
-      <div className="relative rounded-[42px] p-[10px] shadow-xl" style={{ backgroundColor: NAVY }}>
+      <div className="relative rounded-[42px] bg-primary p-[10px] shadow-xl">
         {/* Speaker notch */}
         <div className="absolute left-1/2 top-3 z-10 h-1.5 w-14 -translate-x-1/2 rounded-full bg-white/15" />
 
         {/* Screen */}
-        <div className="overflow-hidden rounded-[32px] bg-white">
+        <div className="overflow-hidden rounded-[32px] bg-background">
           <div className="flex aspect-[9/19] flex-col px-4 pb-5 pt-9">
             {/* Status row */}
             <div className="flex items-center justify-between text-[10px] font-medium text-muted-foreground">
@@ -30,8 +28,8 @@ export function HeroMockup() {
 
             {/* Book card */}
             <div className="mt-3 flex-1 rounded-card border border-card-border bg-card p-card shadow-card">
-              <div className="flex h-24 w-full items-center justify-center rounded-md" style={{ backgroundColor: `${NAVY}0F` }}>
-                <BookOpen className="h-7 w-7" style={{ color: NAVY }} aria-hidden />
+              <div className="flex h-24 w-full items-center justify-center rounded-md bg-primary/10">
+                <BookOpen className="h-7 w-7 text-primary" aria-hidden />
               </div>
 
               <p className="mt-3 text-[13px] font-semibold leading-tight text-foreground">
@@ -47,10 +45,7 @@ export function HeroMockup() {
                 </span>
               </div>
 
-              <div
-                className="mt-3 flex h-10 items-center justify-center rounded-button text-[13px] font-semibold text-white"
-                style={{ backgroundColor: NAVY }}
-              >
+              <div className="mt-3 flex h-10 items-center justify-center rounded-button bg-primary text-[13px] font-semibold text-primary-foreground">
                 Continue Reading
               </div>
 
@@ -60,7 +55,7 @@ export function HeroMockup() {
                   <span>33%</span>
                 </div>
                 <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                  <div className="h-full w-1/3 rounded-full" style={{ backgroundColor: NAVY }} />
+                  <div className="h-full w-1/3 rounded-full bg-primary" />
                 </div>
               </div>
             </div>
@@ -89,8 +84,8 @@ export function LecturerMockup() {
       </div>
 
       <div className="flex items-center gap-4 rounded-card border border-card-border bg-card p-card shadow-card">
-        <div className="flex h-14 w-10 flex-shrink-0 items-center justify-center rounded-md" style={{ backgroundColor: `${NAVY}0F` }}>
-          <BookOpen className="h-5 w-5" style={{ color: NAVY }} aria-hidden />
+        <div className="flex h-14 w-10 flex-shrink-0 items-center justify-center rounded-md bg-primary/10">
+          <BookOpen className="h-5 w-5 text-primary" aria-hidden />
         </div>
         <div className="min-w-0 flex-1">
           <p className="truncate text-[14px] font-semibold text-foreground">Organic Chemistry I</p>
@@ -117,13 +112,13 @@ export function StudentMockup() {
           key={item.title}
           className="flex items-center gap-4 rounded-card border border-card-border bg-card p-card shadow-card"
         >
-          <div className="flex h-14 w-10 flex-shrink-0 items-center justify-center rounded-md" style={{ backgroundColor: `${NAVY}0F` }}>
-            <BookOpen className="h-5 w-5" style={{ color: NAVY }} aria-hidden />
+          <div className="flex h-14 w-10 flex-shrink-0 items-center justify-center rounded-md bg-primary/10">
+            <BookOpen className="h-5 w-5 text-primary" aria-hidden />
           </div>
           <div className="min-w-0 flex-1">
             <p className="truncate text-[14px] font-semibold text-foreground">{item.title}</p>
             <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-              <div className="h-full rounded-full" style={{ width: item.progress, backgroundColor: NAVY }} />
+              <div className="h-full rounded-full bg-primary" style={{ width: item.progress }} />
             </div>
             <p className="mt-1 text-[12px] text-muted-foreground">{item.meta}</p>
           </div>
@@ -131,7 +126,7 @@ export function StudentMockup() {
       ))}
 
       <div className="flex items-center gap-2 rounded-card border border-card-border bg-card p-card text-[12px] text-muted-foreground shadow-card">
-        <CheckCircle2 className="h-4 w-4 flex-shrink-0" style={{ color: NAVY }} aria-hidden />
+        <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-primary" aria-hidden />
         <span>Verified materials from your lecturers</span>
       </div>
     </div>

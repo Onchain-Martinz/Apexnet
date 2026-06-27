@@ -11,7 +11,7 @@ interface DepartmentOption {
   name: string;
 }
 
-const selectClass = "h-11 w-full rounded-input border border-border bg-background px-2 text-[12px] font-medium text-foreground appearance-none transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-foreground";
+const selectClass = "h-11 w-full rounded-input border border-border bg-input px-2 text-[12px] font-medium text-foreground appearance-none transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-primary focus:shadow-glow";
 
 export function DiscoverFilters({ departments }: { departments: DepartmentOption[] }) {
   const router = useRouter();
@@ -49,7 +49,7 @@ export function DiscoverFilters({ departments }: { departments: DepartmentOption
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search title, course code, or topic"
-          className="h-12 w-full rounded-input border border-border bg-background pl-11 pr-4 text-[16px] sm:text-[15px] text-foreground placeholder:text-muted-foreground transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-foreground"
+          className="h-12 w-full rounded-input border border-border bg-input pl-11 pr-4 text-[16px] sm:text-[15px] text-foreground placeholder:text-muted-foreground transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-primary focus:shadow-glow"
         />
       </div>
 

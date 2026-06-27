@@ -63,22 +63,26 @@ function formatDate(iso: string): string {
 
 // ── Adaptive progress color ───────────────────────────────────────────────────
 
+// Hex literals here are the same values as --primary/--success/--warning/
+// --destructive — kept literal (not Tailwind classes) because this function
+// feeds an inline style for a dynamically computed color, which static
+// utility classes can't express.
 function progressColor(pct: number): { fill: string; glow: string } {
-  if (pct >= 100) return { fill: "#07132A", glow: "rgba(7,19,42,0.22)" };
-  if (pct >= 80)  return { fill: "#4ADE80", glow: "rgba(74,222,128,0.28)" };
-  if (pct >= 50)  return { fill: "#FBBF24", glow: "rgba(251,191,36,0.28)" };
-  return                { fill: "#F87171", glow: "rgba(248,113,113,0.22)" };
+  if (pct >= 100) return { fill: "#3D40F3", glow: "rgba(61,64,243,0.35)" };
+  if (pct >= 80)  return { fill: "#10B981", glow: "rgba(16,185,129,0.28)" };
+  if (pct >= 50)  return { fill: "#F59E0B", glow: "rgba(245,158,11,0.28)" };
+  return                { fill: "#EF4444", glow: "rgba(239,68,68,0.22)" };
 }
 
 // ── Withdrawal badge ──────────────────────────────────────────────────────────
 
 const W_STYLES: Record<WithdrawalStatus, string> = {
-  PENDING:    "bg-[#F4F4F5] text-[#71717A]",
-  APPROVED:   "bg-[#DCFCE7] text-[#16A34A]",
-  PROCESSING: "bg-[#EEF2FF] text-[#4F46E5]",
-  PAID:       "bg-[#DCFCE7] text-[#16A34A]",
-  FAILED:     "bg-[#FEE2E2] text-[#DC2626]",
-  REJECTED:   "bg-[#FEE2E2] text-[#DC2626]",
+  PENDING:    "bg-muted text-muted-foreground",
+  APPROVED:   "bg-success/10 text-success",
+  PROCESSING: "bg-primary/10 text-primary",
+  PAID:       "bg-success/10 text-success",
+  FAILED:     "bg-destructive/10 text-destructive",
+  REJECTED:   "bg-destructive/10 text-destructive",
 };
 
 const W_LABELS: Record<WithdrawalStatus, string> = {
@@ -137,12 +141,12 @@ function Sheet({
       className={
         variant === "dialog"
           ? [
-              "flex w-full max-w-md flex-col overflow-hidden rounded-[24px] bg-white shadow-[0_4px_40px_rgba(0,0,0,0.10)]",
+              "flex w-full max-w-md flex-col overflow-hidden rounded-[24px] glass-surface-elevated",
               "transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]",
               open ? "scale-100 opacity-100" : "pointer-events-none scale-95 opacity-0",
             ].join(" ")
           : [
-              "fixed inset-x-0 bottom-[max(1.5rem,env(safe-area-inset-bottom))] z-50 flex flex-col overflow-hidden rounded-[24px] bg-white shadow-[0_-4px_40px_rgba(0,0,0,0.10)]",
+              "fixed inset-x-0 bottom-[max(1.5rem,env(safe-area-inset-bottom))] z-50 flex flex-col overflow-hidden rounded-[24px] glass-surface-elevated",
               "transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]",
               open ? "translate-y-0" : "translate-y-full",
             ].join(" ")
@@ -183,22 +187,22 @@ function Sheet({
 function SheetHandle() {
   return (
     <div className="flex flex-shrink-0 justify-center pt-3 pb-1">
-      <div className="h-1 w-10 rounded-full bg-[#E2E8F0]" />
+      <div className="h-1 w-10 rounded-full bg-foreground/20" />
     </div>
   );
 }
 
 function SheetHeader({ title, onClose }: { title: string; onClose: () => void }) {
   return (
-    <div className="flex flex-shrink-0 items-center justify-between border-b border-[#F4F4F5] px-5 py-3">
-      <h3 className="text-[16px] font-semibold text-[#0F172A]">{title}</h3>
+    <div className="flex flex-shrink-0 items-center justify-between border-b border-border px-5 py-3">
+      <h3 className="text-[16px] font-semibold text-foreground">{title}</h3>
       <button
         type="button"
         onClick={onClose}
-        className="flex h-7 w-7 items-center justify-center rounded-full bg-[#F4F4F5] transition-colors duration-100 active:bg-[#E5E7EB]"
+        className="flex h-7 w-7 items-center justify-center rounded-full bg-muted transition-colors duration-100 active:bg-muted/60"
         aria-label="Close"
       >
-        <X className="h-4 w-4 text-[#64748B]" />
+        <X className="h-4 w-4 text-muted-foreground" />
       </button>
     </div>
   );
@@ -259,23 +263,23 @@ function MonthlyGoalSection({
   const colors = progressColor(rawPct);
 
   return (
-    <div className="rounded-[22px] border border-[#EAEAEA] bg-white px-5 py-5 shadow-[0_2px_16px_rgba(0,0,0,0.06)]">
+    <div className="glass-surface rounded-[22px] px-5 py-5">
 
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <p className="text-[14px] font-semibold text-[#0F172A]">{monthName} Goal</p>
+        <p className="text-[14px] font-semibold text-foreground">{monthName} Goal</p>
         <button
           type="button"
           onClick={startEdit}
-          className="text-[12px] font-medium text-[#94A3B8] transition-colors duration-150 hover:text-[#475569]"
+          className="text-[12px] font-medium text-muted-foreground transition-colors duration-150 hover:text-foreground"
         >
           Edit
         </button>
       </div>
 
       {/* Amounts + percentage */}
-      <p className="text-[13px] text-[#475569] mb-0.5">
-        <span className="text-[18px] font-bold text-[#0F172A]">{nairaCompact(currentRevenue)}</span>
+      <p className="text-[13px] text-muted-foreground mb-0.5">
+        <span className="text-[18px] font-bold text-foreground">{nairaCompact(currentRevenue)}</span>
         {" "}of {nairaCompact(goal)}
       </p>
       <p className="text-[13px] font-semibold mb-3" style={{ color: colors.fill }}>
@@ -283,7 +287,7 @@ function MonthlyGoalSection({
       </p>
 
       {/* Animated progress bar */}
-      <div className="relative h-[8px] overflow-hidden rounded-full bg-[#EBEBEB]">
+      <div className="relative h-[8px] overflow-hidden rounded-full bg-muted">
         <div
           className="absolute inset-y-0 left-0 rounded-full"
           style={{
@@ -304,10 +308,10 @@ function MonthlyGoalSection({
       </div>
 
       {/* Remaining */}
-      <p className="mt-2.5 text-[12px] text-[#94A3B8]">
+      <p className="mt-2.5 text-[12px] text-muted-foreground">
         {remaining > 0 ? (
           <>
-            <span className="font-semibold text-[#475569]">{nairaCompact(remaining)}</span> remaining
+            <span className="font-semibold text-foreground">{nairaCompact(remaining)}</span> remaining
           </>
         ) : (
           <span className="font-semibold" style={{ color: colors.fill }}>Goal reached</span>
@@ -318,7 +322,7 @@ function MonthlyGoalSection({
       {editing && (
         <div className="mt-4 flex items-end gap-2">
           <div className="flex-1">
-            <p className="mb-1.5 text-[11px] font-medium text-[#94A3B8]">Monthly goal (₦)</p>
+            <p className="mb-1.5 text-[11px] font-medium text-muted-foreground">Monthly goal (₦)</p>
             <input
               type="number"
               value={input}
@@ -327,7 +331,7 @@ function MonthlyGoalSection({
                 if (e.key === "Enter") saveEdit();
                 if (e.key === "Escape") setEditing(false);
               }}
-              className="w-full rounded-[10px] border border-[#E2E8F0] bg-[#FAFAFA] px-3 py-2.5 text-[14px] font-semibold text-[#0F172A] outline-none focus:border-[#07132A] focus:bg-white"
+              className="w-full rounded-[10px] border border-border bg-input px-3 py-2.5 text-[14px] font-semibold text-foreground outline-none focus:border-primary focus:shadow-glow"
               autoFocus
               placeholder="10000"
             />
@@ -335,7 +339,7 @@ function MonthlyGoalSection({
           <button
             type="button"
             onClick={saveEdit}
-            className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[10px] bg-[#07132A] text-white transition-all duration-150 active:scale-[0.97]"
+            className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[10px] bg-primary text-primary-foreground transition-all duration-150 active:scale-[0.97]"
             aria-label="Save"
           >
             <Check className="h-4 w-4" />
@@ -343,10 +347,10 @@ function MonthlyGoalSection({
           <button
             type="button"
             onClick={() => setEditing(false)}
-            className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[10px] border border-[#E2E8F0] transition-all duration-150 active:scale-[0.97]"
+            className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[10px] border border-border transition-all duration-150 active:scale-[0.97]"
             aria-label="Cancel"
           >
-            <X className="h-4 w-4 text-[#64748B]" />
+            <X className="h-4 w-4 text-muted-foreground" />
           </button>
         </div>
       )}
@@ -415,15 +419,15 @@ function SalesOverviewSection({ sales }: { sales: RecentSale[] }) {
   const maxRevenue = Math.max(...buckets.map((b) => b.revenue), 1);
 
   return (
-    <div className="rounded-[22px] border border-[#EAEAEA] bg-white px-5 py-5 shadow-[0_2px_16px_rgba(0,0,0,0.06)]">
-      <p className="mb-4 text-[14px] font-semibold text-[#0F172A]">Sales Overview</p>
+    <div className="glass-surface rounded-[22px] px-5 py-5">
+      <p className="mb-4 text-[14px] font-semibold text-foreground">Sales Overview</p>
 
-      <p className="text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: "#909090" }}>
+      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
         Revenue · Last 7 Days
       </p>
       <p
-        className="mt-1 font-bold leading-none"
-        style={{ fontSize: "28px", letterSpacing: "-0.02em", color: "#1A1A1A" }}
+        className="mt-1 font-bold leading-none text-foreground"
+        style={{ fontSize: "28px", letterSpacing: "-0.02em" }}
       >
         {naira(totalRevenue)}
       </p>
@@ -433,36 +437,36 @@ function SalesOverviewSection({ sales }: { sales: RecentSale[] }) {
           {buckets.map((bucket, i) => (
             <div key={i} className="flex h-full flex-1 flex-col items-center justify-end">
               <div
-                className="w-full max-w-[28px] rounded-t-[5px] rounded-b-[2px] bg-[#16A34A]"
+                className="w-full max-w-[28px] rounded-t-[5px] rounded-b-[2px] bg-success"
                 style={{ height: Math.max(4, (bucket.revenue / maxRevenue) * CHART_HEIGHT) }}
               />
-              <p className="mt-2 text-[10px] font-medium text-[#94A3B8]">{bucket.label}</p>
+              <p className="mt-2 text-[10px] font-medium text-muted-foreground">{bucket.label}</p>
             </div>
           ))}
         </div>
       ) : (
         <div
-          className="mt-4 flex flex-col items-center justify-center rounded-[16px] border border-[#EAEAEA] bg-[#FAFAFA] px-6 text-center"
+          className="mt-4 flex flex-col items-center justify-center rounded-[16px] border border-card-border bg-muted px-6 text-center"
           style={{ height: CHART_HEIGHT }}
         >
-          <p className="text-[13px] text-[#94A3B8]">
+          <p className="text-[13px] text-muted-foreground">
             Sales data will appear here as purchases come in.
           </p>
         </div>
       )}
 
-      <div className="mt-[18px] grid grid-cols-3 divide-x divide-[#EAEAEA] overflow-hidden rounded-[18px] border border-[#EAEAEA]">
+      <div className="mt-[18px] grid grid-cols-3 divide-x divide-card-border overflow-hidden rounded-[18px] border border-card-border">
         <div className="flex flex-col items-center px-3 py-5">
-          <p className="text-[15px] font-bold leading-none text-[#0F172A]">{naira(totalRevenue)}</p>
-          <p className="mt-1.5 text-[11px] text-[#94A3B8]">Revenue</p>
+          <p className="text-[15px] font-bold leading-none text-foreground">{naira(totalRevenue)}</p>
+          <p className="mt-1.5 text-[11px] text-muted-foreground">Revenue</p>
         </div>
         <div className="flex flex-col items-center px-3 py-5">
-          <p className="text-[15px] font-bold leading-none text-[#0F172A]">{salesCount}</p>
-          <p className="mt-1.5 text-[11px] text-[#94A3B8]">Sales</p>
+          <p className="text-[15px] font-bold leading-none text-foreground">{salesCount}</p>
+          <p className="mt-1.5 text-[11px] text-muted-foreground">Sales</p>
         </div>
         <div className="flex flex-col items-center px-3 py-5">
-          <p className="text-[15px] font-bold leading-none text-[#0F172A]">{naira(avgSale)}</p>
-          <p className="mt-1.5 text-[11px] text-[#94A3B8]">Avg. Sale</p>
+          <p className="text-[15px] font-bold leading-none text-foreground">{naira(avgSale)}</p>
+          <p className="mt-1.5 text-[11px] text-muted-foreground">Avg. Sale</p>
         </div>
       </div>
     </div>
@@ -488,20 +492,20 @@ function ActionCard({
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full items-center gap-4 rounded-[20px] border border-[#EAEAEA] bg-white p-4 text-left shadow-[0_2px_12px_rgba(0,0,0,0.05)] transition-all duration-150 active:scale-[0.98] hover:border-[#D8DCE3]"
+      className="flex w-full items-center gap-4 rounded-[20px] border border-card-border bg-card p-4 text-left shadow-card transition-all duration-150 active:scale-[0.98] hover:border-foreground/15"
     >
-      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[12px] bg-[#F4F5F7]">
-        <Icon className="h-5 w-5 text-[#475569]" aria-hidden />
+      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[12px] bg-muted">
+        <Icon className="h-5 w-5 text-muted-foreground" aria-hidden />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-[14px] font-semibold text-[#0F172A]">{title}</p>
-        <p className="mt-0.5 text-[12px] text-[#94A3B8]">{description}</p>
+        <p className="text-[14px] font-semibold text-foreground">{title}</p>
+        <p className="mt-0.5 text-[12px] text-muted-foreground">{description}</p>
       </div>
       <div className="flex flex-shrink-0 items-center gap-2">
         {count > 0 && (
-          <span className="text-[12px] font-semibold text-[#94A3B8]">{count}</span>
+          <span className="text-[12px] font-semibold text-muted-foreground">{count}</span>
         )}
-        <ChevronRight className="h-4 w-4 text-[#C0C7D4]" aria-hidden />
+        <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden />
       </div>
     </button>
   );
@@ -531,12 +535,12 @@ function TextbookGridCard({
     <button
       type="button"
       onClick={onClick}
-      className="flex flex-col overflow-hidden rounded-[12px] border border-[#EAEAEA] bg-white text-left shadow-[0_1px_4px_rgba(0,0,0,0.06)] transition-all duration-150 active:scale-[0.96] active:bg-[#FAFAFA]"
+      className="flex flex-col overflow-hidden rounded-[12px] border border-card-border bg-card text-left shadow-card transition-all duration-150 active:scale-[0.96] active:bg-muted/50"
     >
       {/* Cover thumbnail — fixed height, centered */}
-      <div className="flex w-full items-center justify-center bg-[#F4F5F7] py-3">
+      <div className="flex w-full items-center justify-center bg-muted py-3">
         <div
-          className="relative overflow-hidden rounded-[5px] shadow-[0_1px_4px_rgba(0,0,0,0.14)]"
+          className="relative overflow-hidden rounded-[5px] shadow-card"
           style={{ width: 42, height: 56 }}
         >
           {coverUrl(group.bookId, group.coverImageKey) ? (
@@ -548,8 +552,8 @@ function TextbookGridCard({
               className="object-cover"
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center bg-[#E8EAF0]">
-              <BookOpen className="h-4 w-4 text-[#C0C7D4]" aria-hidden />
+            <div className="flex h-full w-full items-center justify-center bg-muted">
+              <BookOpen className="h-4 w-4 text-muted-foreground" aria-hidden />
             </div>
           )}
         </div>
@@ -557,13 +561,13 @@ function TextbookGridCard({
 
       {/* Info — dense */}
       <div className="flex flex-col gap-0.5 px-2 pb-2.5 pt-2">
-        <p className="line-clamp-2 text-[11px] font-semibold leading-[1.35] text-[#0F172A]">
+        <p className="line-clamp-2 text-[11px] font-semibold leading-[1.35] text-foreground">
           {group.bookTitle}
         </p>
-        <p className="mt-1 text-[11px] font-semibold leading-none text-[#16A34A]">
+        <p className="mt-1 text-[11px] font-semibold leading-none text-success">
           {nairaCompact(group.revenue)}
         </p>
-        <p className="text-[10px] leading-none text-[#94A3B8]">
+        <p className="text-[10px] leading-none text-muted-foreground">
           {group.purchaseCount} {group.purchaseCount === 1 ? "sale" : "sales"}
         </p>
       </div>
@@ -621,22 +625,22 @@ function BookDetailModal({
         aria-label="Book Details"
         onClick={(e) => e.stopPropagation()}
         className={[
-          "flex w-full max-w-md flex-col overflow-hidden rounded-[24px] bg-white shadow-[0_4px_40px_rgba(0,0,0,0.12)]",
+          "flex w-full max-w-md flex-col overflow-hidden rounded-[24px] glass-surface-elevated",
           "transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]",
           open ? "scale-100 opacity-100" : "pointer-events-none scale-95 opacity-0",
         ].join(" ")}
         style={{ maxHeight: "85vh" }}
       >
         {/* Header */}
-        <div className="flex flex-shrink-0 items-center justify-between border-b border-[#F4F4F5] px-5 py-3">
-          <h3 className="text-[16px] font-semibold text-[#0F172A]">Book Details</h3>
+        <div className="flex flex-shrink-0 items-center justify-between border-b border-border px-5 py-3">
+          <h3 className="text-[16px] font-semibold text-foreground">Book Details</h3>
           <button
             type="button"
             onClick={onClose}
-            className="flex h-7 w-7 items-center justify-center rounded-full bg-[#F4F4F5] transition-colors duration-100 active:bg-[#E5E7EB]"
+            className="flex h-7 w-7 items-center justify-center rounded-full bg-muted transition-colors duration-100 active:bg-muted/60"
             aria-label="Close"
           >
-            <X className="h-4 w-4 text-[#64748B]" />
+            <X className="h-4 w-4 text-muted-foreground" />
           </button>
         </div>
 
@@ -650,7 +654,7 @@ function BookDetailModal({
               {/* Book cover */}
               <div className="flex justify-center">
                 <div
-                  className="relative overflow-hidden rounded-[14px] bg-[#F0F1F3] shadow-[0_4px_20px_rgba(0,0,0,0.10)]"
+                  className="relative overflow-hidden rounded-[14px] bg-muted shadow-card"
                   style={{ width: 96, height: 128 }}
                 >
                   {coverUrl(group.bookId, group.coverImageKey) ? (
@@ -663,30 +667,30 @@ function BookDetailModal({
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center">
-                      <BookOpen className="h-8 w-8 text-[#C0C7D4]" aria-hidden />
+                      <BookOpen className="h-8 w-8 text-muted-foreground" aria-hidden />
                     </div>
                   )}
                 </div>
               </div>
 
               {/* Title */}
-              <p className="text-center text-[17px] font-bold leading-snug text-[#0F172A]">
+              <p className="text-center text-[17px] font-bold leading-snug text-foreground">
                 {group.bookTitle}
               </p>
 
               {/* Stats */}
               <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col items-center rounded-[16px] border border-[#EAEAEA] px-4 py-4">
-                  <p className="text-[15px] font-bold leading-none text-[#0F172A]">
+                <div className="flex flex-col items-center rounded-[16px] border border-card-border px-4 py-4">
+                  <p className="text-[15px] font-bold leading-none text-foreground">
                     {naira(group.revenue)}
                   </p>
-                  <p className="mt-1.5 text-[11px] text-[#94A3B8]">Revenue Generated</p>
+                  <p className="mt-1.5 text-[11px] text-muted-foreground">Revenue Generated</p>
                 </div>
-                <div className="flex flex-col items-center rounded-[16px] border border-[#EAEAEA] px-4 py-4">
-                  <p className="text-[15px] font-bold leading-none text-[#0F172A]">
+                <div className="flex flex-col items-center rounded-[16px] border border-card-border px-4 py-4">
+                  <p className="text-[15px] font-bold leading-none text-foreground">
                     {group.purchaseCount}
                   </p>
-                  <p className="mt-1.5 text-[11px] text-[#94A3B8]">
+                  <p className="mt-1.5 text-[11px] text-muted-foreground">
                     {group.purchaseCount === 1 ? "Purchase" : "Purchases"}
                   </p>
                 </div>
@@ -694,20 +698,20 @@ function BookDetailModal({
 
               {/* Students */}
               <div>
-                <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.09em] text-[#94A3B8]">
+                <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.09em] text-muted-foreground">
                   Students
                 </p>
-                <div className="overflow-hidden rounded-[16px] border border-[#EAEAEA]">
+                <div className="overflow-hidden rounded-[16px] border border-card-border">
                   {group.buyers.map((name, i) => (
                     <div key={i}>
                       <div className="flex items-center gap-3 px-4 py-3.5">
-                        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-[#F0F1F3]">
-                          <Users className="h-3.5 w-3.5 text-[#94A3B8]" aria-hidden />
+                        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-muted">
+                          <Users className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
                         </div>
-                        <p className="text-[14px] font-medium text-[#0F172A]">{name}</p>
+                        <p className="text-[14px] font-medium text-foreground">{name}</p>
                       </div>
                       {i < group.buyers.length - 1 && (
-                        <div className="mx-4 border-t border-[#F4F4F5]" />
+                        <div className="mx-4 border-t border-border" />
                       )}
                     </div>
                   ))}
@@ -718,7 +722,7 @@ function BookDetailModal({
               <button
                 type="button"
                 onClick={copyBuyerList}
-                className="flex w-full items-center justify-center gap-2 rounded-[14px] border border-[#E2E8F0] py-3.5 text-[14px] font-semibold text-[#475569] transition-all duration-150 active:scale-[0.98] active:bg-[#F8F9FA]"
+                className="flex w-full items-center justify-center gap-2 rounded-[14px] border border-border py-3.5 text-[14px] font-semibold text-muted-foreground transition-all duration-150 active:scale-[0.98] active:bg-muted/50"
               >
                 <Copy className="h-4 w-4" aria-hidden />
                 Copy Buyer List
@@ -732,7 +736,7 @@ function BookDetailModal({
       {/* Toast */}
       <div
         className={[
-          "fixed bottom-24 left-1/2 z-[70] -translate-x-1/2 rounded-full bg-[#0F172A] px-4 py-2.5 text-[13px] font-semibold text-white shadow-lg transition-all duration-300",
+          "fixed bottom-24 left-1/2 z-[70] -translate-x-1/2 rounded-full bg-foreground px-4 py-2.5 text-[13px] font-semibold text-background shadow-lg transition-all duration-300",
           toast ? "opacity-100 translate-y-0" : "pointer-events-none opacity-0 translate-y-2",
         ].join(" ")}
         aria-live="polite"
@@ -800,10 +804,10 @@ function StudentPurchasesModal({
 
         {/* Search bar — sticky below header */}
         {groups.length > 0 && (
-          <div className="flex-shrink-0 px-4 py-2.5 border-b border-[#F4F4F5]">
+          <div className="flex-shrink-0 px-4 py-2.5 border-b border-border">
             <div className="relative">
               <Search
-                className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#94A3B8]"
+                className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
                 aria-hidden
               />
               <input
@@ -811,7 +815,7 @@ function StudentPurchasesModal({
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search textbooks…"
-                className="w-full rounded-[10px] bg-[#F4F5F7] py-2 pl-9 pr-3 text-[13px] text-[#0F172A] placeholder-[#94A3B8] outline-none transition-colors duration-150 focus:bg-[#EBEBEB]"
+                className="w-full rounded-[10px] bg-input py-2 pl-9 pr-3 text-[13px] text-foreground placeholder-muted-foreground outline-none transition-colors duration-150 focus:shadow-glow"
               />
             </div>
           </div>
@@ -824,15 +828,15 @@ function StudentPurchasesModal({
           {groups.length === 0 ? (
             /* No purchases at all */
             <div className="flex flex-col items-center gap-3 py-16 text-center">
-              <BookOpen className="h-8 w-8 text-[#CBD5E1]" aria-hidden />
-              <p className="text-[13px] text-[#94A3B8]">No purchases yet</p>
+              <BookOpen className="h-8 w-8 text-muted-foreground" aria-hidden />
+              <p className="text-[13px] text-muted-foreground">No purchases yet</p>
             </div>
           ) : filtered.length === 0 ? (
             /* Search returned nothing */
             <div className="flex flex-col items-center gap-2 py-16 text-center">
               <span className="text-[28px]" aria-hidden>📚</span>
-              <p className="text-[14px] font-semibold text-[#0F172A]">No matching textbooks found</p>
-              <p className="text-[12px] text-[#94A3B8]">Try another search term</p>
+              <p className="text-[14px] font-semibold text-foreground">No matching textbooks found</p>
+              <p className="text-[12px] text-muted-foreground">Try another search term</p>
             </div>
           ) : (
             /* Auto-fill grid: 3 cols on most phones, 2 on very small */
@@ -883,25 +887,25 @@ function PayoutRequestsModal({
       >
         {withdrawals.length === 0 ? (
           <div className="flex flex-col items-center gap-3 py-16 text-center">
-            <Wallet className="h-8 w-8 text-[#CBD5E1]" aria-hidden />
-            <p className="text-[13px] text-[#94A3B8]">No payout requests yet</p>
+            <Wallet className="h-8 w-8 text-muted-foreground" aria-hidden />
+            <p className="text-[13px] text-muted-foreground">No payout requests yet</p>
           </div>
         ) : (
           withdrawals.map((w, i) => (
             <div key={w.id}>
               <div className="flex items-start justify-between gap-4 px-5 py-4">
                 <div className="min-w-0 flex-1 space-y-1">
-                  <p className="text-[15px] font-semibold text-[#0F172A]">{naira(w.amount)}</p>
-                  <p className="text-[12px] text-[#94A3B8]">{formatDate(w.createdAt)}</p>
+                  <p className="text-[15px] font-semibold text-foreground">{naira(w.amount)}</p>
+                  <p className="text-[12px] text-muted-foreground">{formatDate(w.createdAt)}</p>
                   {w.transferReference && (
-                    <p className="truncate font-mono text-[11px] text-[#C0C7D4]">
+                    <p className="truncate font-mono text-[11px] text-muted-foreground">
                       {w.transferReference}
                     </p>
                   )}
                 </div>
                 <WithdrawalBadge status={w.status} />
               </div>
-              {i < withdrawals.length - 1 && <div className="mx-5 border-t border-[#F4F4F5]" />}
+              {i < withdrawals.length - 1 && <div className="mx-5 border-t border-border" />}
             </div>
           ))
         )}
@@ -930,7 +934,7 @@ export function EarningsPageClient({ data }: { data: EarningsData }) {
       <div className="mx-auto max-w-lg px-page pb-16 pt-12">
         <header className="mb-8">
           <h1
-            className="font-bold leading-none tracking-tight text-[#0F172A]"
+            className="font-bold leading-none tracking-tight text-foreground"
             style={{ fontSize: "clamp(22px, 6vw, 28px)" }}
           >
             Earnings

@@ -320,7 +320,7 @@ export function PdfReader({ fileUrl, initialPage, onProgressChange }: PdfReaderP
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Search in document"
-            className="h-9 flex-1 rounded-input border border-border bg-background px-3 text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
+            className="h-9 flex-1 rounded-input border border-border bg-input px-3 text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-primary"
           />
           {searching ? (
             <Loader2 className="h-4 w-4 flex-shrink-0 animate-spin text-muted-foreground" aria-hidden />

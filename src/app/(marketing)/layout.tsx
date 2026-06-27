@@ -2,8 +2,6 @@ import Link from "next/link";
 import { cn } from "@/lib/utils/cn";
 import { routes } from "@/config/routes";
 
-const NAVY = "#071330";
-
 const navButton =
   "inline-flex h-10 items-center justify-center gap-2 rounded-button px-4 text-[13px] font-semibold transition-all duration-150 touch-target active:scale-[0.97]";
 
@@ -29,7 +27,7 @@ export default function MarketingLayout({
       <header className="sticky top-0 z-40 border-b border-border bg-background/80 pt-safe backdrop-blur">
         <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-5">
           <Link href={routes.home} className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl" style={{ backgroundColor: NAVY }}>
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary">
               <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4 text-white" aria-hidden>
                 <path d="M10 2L17.3 15H2.7L10 2Z" fill="currentColor" />
               </svg>
@@ -41,7 +39,10 @@ export default function MarketingLayout({
             <Link href={routes.login} className={cn(navButton, "text-foreground hover:bg-muted")}>
               Sign in
             </Link>
-            <Link href={routes.signup} className={cn(navButton, "text-white hover:opacity-90")} style={{ backgroundColor: NAVY }}>
+            <Link
+              href={routes.signup}
+              className={cn(navButton, "bg-gradient-to-br from-[#6366F1] to-[#8B5CF6] text-white hover:shadow-glow")}
+            >
               Get started
             </Link>
           </div>

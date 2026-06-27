@@ -213,10 +213,10 @@ export default function SignupPage() {
                 onChange={(e) => setLevel(e.target.value)}
                 disabled={loading}
                 className={cn(
-                  "h-12 w-full rounded-input border bg-background px-4",
+                  "h-12 w-full rounded-input border bg-input px-4",
                   "text-[16px] sm:text-[15px]",
                   "transition-all duration-150",
-                  "focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-foreground",
+                  "focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-primary focus:shadow-glow",
                   level === "" ? "text-muted-foreground" : "text-foreground",
                   fieldErrors.level
                     ? "border-destructive focus:ring-destructive/20"

@@ -29,10 +29,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           id={inputId}
           className={cn(
             // Apex spec: radius 14px, height 48px, 16px on mobile prevents iOS zoom
-            "h-12 w-full rounded-input border bg-background px-4",
+            "h-12 w-full rounded-input border bg-input px-4",
             "text-[16px] sm:text-[15px] text-foreground placeholder:text-muted-foreground",
             "transition-all duration-150",
-            "focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-foreground",
+            "focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-primary focus:shadow-glow",
             error
               ? "border-destructive focus:ring-destructive/20 focus:border-destructive"
               : "border-border",
@@ -75,10 +75,10 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
             id={inputId}
             type={visible ? "text" : "password"}
             className={cn(
-              "h-12 w-full rounded-input border bg-background pl-4 pr-12",
+              "h-12 w-full rounded-input border bg-input pl-4 pr-12",
               "text-[16px] sm:text-[15px] text-foreground placeholder:text-muted-foreground",
               "transition-all duration-150",
-              "focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-foreground",
+              "focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-primary focus:shadow-glow",
               error
                 ? "border-destructive focus:ring-destructive/20 focus:border-destructive"
                 : "border-border",
@@ -137,10 +137,10 @@ export const EmailInput = forwardRef<HTMLInputElement, EmailInputProps>(
             type="email"
             value={value}
             className={cn(
-              "h-12 w-full rounded-input border bg-background px-4 pr-11",
+              "h-12 w-full rounded-input border bg-input px-4 pr-11",
               "text-[16px] sm:text-[15px] text-foreground placeholder:text-muted-foreground",
               "transition-all duration-150",
-              "focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-foreground",
+              "focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-primary focus:shadow-glow",
               error
                 ? "border-destructive focus:ring-destructive/20 focus:border-destructive"
                 : "border-border",
