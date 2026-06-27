@@ -28,6 +28,20 @@ const RENDER_WINDOW = 2;
 // before the first page has reported its real dimensions.
 const DEFAULT_ASPECT_RATIO = 1.414;
 
+// A single mid-point threshold is enough to tell which page is dominant —
+// the observer callback only needs to fire when that changes, not at every
+// 25% step of every page's visibility.
+const PAGE_VISIBILITY_THRESHOLD = 0.5;
+
+// Caps how often scroll-driven page detection turns into a setPageNumber
+// (and therefore a render-window) update during fast scrolling.
+const PAGE_DETECT_THROTTLE_MS = 120;
+
+// Debounces the onProgressChange callback into the parent so a fast scroll
+// through many page boundaries doesn't re-render the host page once per
+// boundary — only once detection settles on a page.
+const PROGRESS_REPORT_DEBOUNCE_MS = 200;
+
 interface PdfReaderProps {
   fileUrl: string;
   initialPage?: number;
@@ -90,6 +104,12 @@ export function PdfReader({ fileUrl, initialPage, onProgressChange }: PdfReaderP
     if (!numPages) return;
     const root = scrollContainerRef.current;
 
+    // Throttled separately from the callback itself — fast scrolling can
+    // fire the callback many times per second; this caps how often that
+    // turns into an actual setPageNumber update.
+    let throttleTimeout: ReturnType<typeof setTimeout> | null = null;
+    let latestBestPage: number | null = null;
+
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
@@ -108,10 +128,16 @@ export function PdfReader({ fileUrl, initialPage, onProgressChange }: PdfReaderP
         });
 
         if (bestPage > 0 && bestRatio > 0) {
-          setPageNumber(bestPage);
+          latestBestPage = bestPage;
+          if (!throttleTimeout) {
+            throttleTimeout = setTimeout(() => {
+              throttleTimeout = null;
+              if (latestBestPage !== null) setPageNumber(latestBestPage);
+            }, PAGE_DETECT_THROTTLE_MS);
+          }
         }
       },
-      { root, threshold: [0, 0.25, 0.5, 0.75, 1] },
+      { root, threshold: PAGE_VISIBILITY_THRESHOLD },
     );
 
     observerRef.current = observer;
@@ -122,6 +148,7 @@ export function PdfReader({ fileUrl, initialPage, onProgressChange }: PdfReaderP
       observer.disconnect();
       observerRef.current = null;
       visibility.clear();
+      if (throttleTimeout) clearTimeout(throttleTimeout);
     };
   }, [numPages]);
 
@@ -156,9 +183,15 @@ export function PdfReader({ fileUrl, initialPage, onProgressChange }: PdfReaderP
   }, [numPages, containerWidth, initialPage]);
 
   // ── Report live page/percentage to parent for header + progress saving ──
+  // Debounced so a fast scroll through many page boundaries doesn't
+  // re-render the host page (progress bar, header) once per boundary —
+  // only once detection settles on a page.
   useEffect(() => {
     if (!numPages) return;
-    onProgressChange?.(pageNumber, numPages);
+    const timeout = setTimeout(() => {
+      onProgressChange?.(pageNumber, numPages);
+    }, PROGRESS_REPORT_DEBOUNCE_MS);
+    return () => clearTimeout(timeout);
   }, [pageNumber, numPages, onProgressChange]);
 
   const goToPage = useCallback(
