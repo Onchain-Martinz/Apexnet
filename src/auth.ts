@@ -6,6 +6,7 @@ import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
 import { loginSchema } from "@/lib/validations/auth";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { authConfig } from "@/auth.config";
 import type { Role } from "@prisma/client";
 
 // PrismaAdapter expects an `emailVerified` column; our schema uses `emailVerifiedAt`.
@@ -53,9 +54,9 @@ const adapter = {
 };
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  ...authConfig,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   adapter: adapter as any,
-  session: { strategy: "jwt" },
 
   providers: [
     Google({
@@ -112,6 +113,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
 
   callbacks: {
+    ...authConfig.callbacks,
+
     async signIn({ user, account }) {
       // Credentials sign-ins are fully handled by authorize(); only gate OAuth.
       if (account?.provider !== "google") return true;
@@ -192,23 +195,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
       return token;
     },
-
-    async session({ session, token }) {
-      session.user.id = token.id as string;
-      session.user.role = token.role as Role;
-      session.user.emailVerifiedAt = token.emailVerifiedAt as string | null;
-      session.user.mustChangePassword = token.mustChangePassword as boolean;
-      session.user.profileComplete = token.profileComplete as boolean;
-      // Present only while an admin is impersonating this user (see /api/admin/impersonate).
-      session.user.impersonatorId = token.impersonatorId as string | undefined;
-      session.user.impersonatorRole = token.impersonatorRole as Role | undefined;
-      return session;
-    },
-  },
-
-  pages: {
-    signIn: "/login",
-    error: "/login",
-    newUser: "/complete-profile",
+    // session() is inherited from authConfig — same shape as before
+    // (id, role, emailVerifiedAt, mustChangePassword, profileComplete,
+    // impersonatorId, impersonatorRole), just defined once instead of twice.
   },
 });
