@@ -3,8 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
+import { startGoogleSignIn } from "@/lib/auth/start-google-signin";
 
 function GoogleIcon() {
   return (
@@ -21,9 +21,9 @@ export default function SignupPage() {
   const router = useRouter();
   const [googleLoading, setGoogleLoading] = useState(false);
 
-  function handleGoogleSignIn() {
+  async function handleGoogleSignIn() {
     setGoogleLoading(true);
-    signIn("google", { callbackUrl: "/student" });
+    await startGoogleSignIn("/student");
   }
 
   return (

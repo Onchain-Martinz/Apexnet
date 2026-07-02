@@ -7,6 +7,7 @@ import { signIn, getSession } from "next-auth/react";
 import { EmailInput, PasswordInput } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { loginSchema } from "@/lib/validations/auth";
+import { startGoogleSignIn } from "@/lib/auth/start-google-signin";
 import type { Role } from "@prisma/client";
 
 function GoogleIcon() {
@@ -45,10 +46,10 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
-  function handleGoogleSignIn() {
+  async function handleGoogleSignIn() {
     setGoogleLoading(true);
     // callbackUrl is preserved so the user lands where they intended after OAuth.
-    signIn("google", { callbackUrl: callbackUrl ?? "/student" });
+    await startGoogleSignIn(callbackUrl ?? "/student");
   }
 
   async function handleSubmit(e: React.FormEvent) {
