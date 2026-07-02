@@ -8,9 +8,10 @@ const ROLE_HOME: Record<Role, string> = {
   ADMIN: "/admin",
 };
 
-const AUTH_PAGES = ["/login", "/signup"];
-const PUBLIC_PAGES = ["/", "/login", "/signup", "/forgot-password", "/reset-password", "/admin/setup", "/api/admin/bootstrap"];
+const AUTH_PAGES = ["/login", "/signup", "/signup/email"];
+const PUBLIC_PAGES = ["/", "/login", "/signup", "/signup/email", "/forgot-password", "/reset-password", "/admin/setup", "/api/admin/bootstrap"];
 const VERIFY_EMAIL_PAGE = "/verify-email";
+const COMPLETE_PROFILE_PAGE = "/complete-profile";
 
 export default auth((req) => {
   const { nextUrl } = req;
@@ -57,6 +58,32 @@ export default auth((req) => {
 
   // Verified user hitting /verify-email → send to their dashboard
   if (isLoggedIn && session?.user?.emailVerifiedAt && path === VERIFY_EMAIL_PAGE) {
+    const home = role ? ROLE_HOME[role] : "/student";
+    return NextResponse.redirect(new URL(home, req.url));
+  }
+
+  // Users who have not yet completed their profile (role, university,
+  // department, level) are blocked from the dashboard until they do so —
+  // applies to both Google and email/password signups. Deferred when:
+  //   • mustChangePassword — password-change modal takes precedence
+  //   • impersonatorId — admin impersonation should not be interrupted
+  //   • already on /complete-profile — avoid redirect loop
+  //   • role is ADMIN — admins have no academic profile to complete, and
+  //     /complete-profile doesn't offer an ADMIN option
+  if (
+    isLoggedIn &&
+    role !== "ADMIN" &&
+    session?.user?.emailVerifiedAt &&
+    !session?.user?.profileComplete &&
+    !session?.user?.mustChangePassword &&
+    !session?.user?.impersonatorId &&
+    path !== COMPLETE_PROFILE_PAGE
+  ) {
+    return NextResponse.redirect(new URL(COMPLETE_PROFILE_PAGE, req.url));
+  }
+
+  // Profile-complete user hitting /complete-profile → send to their dashboard
+  if (isLoggedIn && session?.user?.profileComplete && path === COMPLETE_PROFILE_PAGE) {
     const home = role ? ROLE_HOME[role] : "/student";
     return NextResponse.redirect(new URL(home, req.url));
   }

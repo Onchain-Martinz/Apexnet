@@ -18,6 +18,8 @@ export const passwordSchema = z
   .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
   .regex(/[0-9]/, "Password must contain at least one number");
 
+// Academic/profile fields (role, university, department, level, matric
+// number) are collected on /complete-profile after auth, not at signup.
 export const registerSchema = z
   .object({
     name: z
@@ -31,31 +33,10 @@ export const registerSchema = z
       .email("Enter a valid email address"),
     password: passwordSchema,
     confirmPassword: z.string().min(1, "Please confirm your password"),
-    role: z.enum(["STUDENT", "LECTURER"], {
-      required_error: "Please select a role",
-    }),
-    // Required for STUDENT role only — the dashboard's course matching
-    // depends entirely on departmentId + level. Lecturers set these via
-    // their own profile edit page after signup instead.
-    universityName: z.string().trim().max(200, "University name is too long").optional(),
-    departmentName: z.string().trim().max(100, "Department name is too long").optional(),
-    level: z.coerce.number().int().optional(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords do not match",
     path: ["confirmPassword"],
-  })
-  .refine((data) => data.role !== "STUDENT" || !!data.universityName?.trim(), {
-    message: "University is required",
-    path: ["universityName"],
-  })
-  .refine((data) => data.role !== "STUDENT" || !!data.departmentName?.trim(), {
-    message: "Department is required",
-    path: ["departmentName"],
-  })
-  .refine((data) => data.role !== "STUDENT" || [100, 200, 300, 400, 500].includes(data.level ?? -1), {
-    message: "Select a valid level",
-    path: ["level"],
   });
 
 export const forgotPasswordSchema = z.object({

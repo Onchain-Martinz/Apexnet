@@ -8,6 +8,7 @@ declare module "next-auth" {
     role: Role;
     emailVerifiedAt: string | null;
     mustChangePassword: boolean;
+    profileComplete: boolean;
   }
 
   interface Session {
@@ -19,6 +20,7 @@ declare module "next-auth" {
       role: Role;
       emailVerifiedAt: string | null;
       mustChangePassword: boolean;
+      profileComplete: boolean;
       // Present only while an admin is impersonating this user.
       impersonatorId?: string;
       impersonatorRole?: Role;
@@ -32,6 +34,7 @@ declare module "next-auth/jwt" {
     role: Role;
     emailVerifiedAt: string | null;
     mustChangePassword: boolean;
+    profileComplete: boolean;
     impersonatorId?: string;
     impersonatorRole?: Role;
   }

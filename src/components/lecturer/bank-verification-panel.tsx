@@ -204,6 +204,7 @@ export function BankVerificationPanel({ initial }: { initial: BankVerificationDa
                   <button
                     key={bank.code}
                     type="button"
+                    onMouseDown={(e) => e.preventDefault()}
                     onClick={() => {
                       setBankCode(bank.code);
                       setBankSearch(bank.name);

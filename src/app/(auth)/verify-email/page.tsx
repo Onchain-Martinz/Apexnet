@@ -100,10 +100,12 @@ export default function VerifyEmailPage() {
 
       // Pass a defined object so next-auth/react issues a POST (not GET) to
       // /api/auth/session — only POST sets trigger: "update" in the jwt callback.
-      await update({});
+      // Use the returned session, not the closure's `session`, since the
+      // latter still reflects the pre-update value at this point.
+      const updated = await update({});
 
-      const role = session?.user?.role as Role | undefined;
-      router.push(role ? ROLE_HOME[role] : "/student");
+      const role = updated?.user?.role as Role | undefined;
+      router.push(updated?.user?.profileComplete ? (role ? ROLE_HOME[role] : "/student") : "/complete-profile");
       router.refresh();
     } catch {
       setError("Something went wrong. Please try again.");

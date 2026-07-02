@@ -49,6 +49,9 @@ interface PdfReaderProps {
 }
 
 export function PdfReader({ fileUrl, initialPage, onProgressChange }: PdfReaderProps) {
+  // TEMP DEBUG - remove before commit
+  console.log("[PDF-DEBUG] PdfReader render — fileUrl:", fileUrl, "| typeof:", typeof fileUrl);
+
   const [numPages, setNumPages] = useState<number | null>(null);
   const [pageNumber, setPageNumber] = useState(initialPage && initialPage > 0 ? initialPage : 1);
   const [scale, setScale] = useState(1);
@@ -71,6 +74,8 @@ export function PdfReader({ fileUrl, initialPage, onProgressChange }: PdfReaderP
 
   const onDocumentLoadSuccess = useCallback(
     (pdf: PDFDocumentProxy) => {
+      // TEMP DEBUG - remove before commit
+      console.log("[PDF-DEBUG] onLoadSuccess — numPages:", pdf.numPages);
       setNumPages(pdf.numPages);
       setPdfDoc(pdf);
       const target = initialPage && initialPage >= 1 && initialPage <= pdf.numPages ? initialPage : 1;
@@ -78,6 +83,25 @@ export function PdfReader({ fileUrl, initialPage, onProgressChange }: PdfReaderP
     },
     [initialPage],
   );
+
+  // TEMP DEBUG - remove before commit
+  const onDocumentLoadError = useCallback((error: Error) => {
+    console.error("[PDF-DEBUG] onLoadError — full Error object:", error);
+    console.error("[PDF-DEBUG] onLoadError — name:", error?.name, "| message:", error?.message);
+    console.error("[PDF-DEBUG] onLoadError — stack:", error?.stack);
+  }, []);
+
+  // TEMP DEBUG - remove before commit
+  const onDocumentSourceError = useCallback((error: Error) => {
+    console.error("[PDF-DEBUG] onSourceError — full Error object (source never resolved, getDocument() never called):", error);
+    console.error("[PDF-DEBUG] onSourceError — name:", error?.name, "| message:", error?.message);
+    console.error("[PDF-DEBUG] onSourceError — stack:", error?.stack);
+  }, []);
+
+  // TEMP DEBUG - remove before commit
+  const onDocumentSourceSuccess = useCallback(() => {
+    console.log("[PDF-DEBUG] onSourceSuccess — source resolved, about to call pdfjs.getDocument()");
+  }, []);
 
   const handlePageLoadSuccess = useCallback((page: PDFPageProxy) => {
     const viewport = page.getViewport({ scale: 1 });
@@ -406,6 +430,9 @@ export function PdfReader({ fileUrl, initialPage, onProgressChange }: PdfReaderP
         <Document
           file={fileUrl}
           onLoadSuccess={onDocumentLoadSuccess}
+          onLoadError={onDocumentLoadError}
+          onSourceError={onDocumentSourceError}
+          onSourceSuccess={onDocumentSourceSuccess}
           loading={
             <div className="flex h-full items-center justify-center py-20">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" aria-hidden />
