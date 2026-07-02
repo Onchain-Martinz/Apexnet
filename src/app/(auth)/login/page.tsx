@@ -6,6 +6,8 @@ import Link from "next/link";
 import { signIn, getSession } from "next-auth/react";
 import { EmailInput, PasswordInput } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { GoogleButton } from "@/components/auth/google-button";
+import { AUTH_ERROR_MESSAGES } from "@/components/auth/auth-error-banner";
 import { loginSchema } from "@/lib/validations/auth";
 import type { Role } from "@prisma/client";
 
@@ -26,6 +28,8 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl");
+  const authError = searchParams.get("error");
+  const bannerError = authError ? AUTH_ERROR_MESSAGES[authError] : undefined;
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -78,14 +82,22 @@ function LoginForm() {
 
   return (
     <>
-      {globalError && (
+      {(globalError || bannerError) && (
         <div
           className="mb-6 rounded-xl bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive animate-slide-down"
           role="alert"
         >
-          {globalError}
+          {globalError || bannerError}
         </div>
       )}
+
+      <GoogleButton callbackUrl={callbackUrl ?? "/student"} />
+
+      <div className="my-5 flex items-center gap-3">
+        <div className="h-px flex-1 bg-border" />
+        <span className="text-xs text-muted-foreground">or</span>
+        <div className="h-px flex-1 bg-border" />
+      </div>
 
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
         <EmailInput

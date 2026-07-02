@@ -4,20 +4,9 @@ import { db } from "@/lib/db";
 import { registerSchema } from "@/lib/validations/auth";
 import { checkRateLimit, getClientIp, rateLimitResponse, RATE_LIMITS } from "@/lib/rate-limit";
 import { issueEmailVerificationOtp } from "@/lib/auth/email-verification";
+import { findOrCreateUniversity, findOrCreateDepartment } from "@/lib/db/university";
 import type { Role } from "@prisma/client";
 import { captureException } from "@/lib/monitoring";
-
-// Derive a short code from a free-text university name, e.g. "University of
-// Lagos" -> "UOL". Mirrors the same helper in /api/lecturer/profile.
-function deriveShortName(name: string): string {
-  const initials = name
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((w) => w[0])
-    .join("")
-    .toUpperCase();
-  return (initials || name).slice(0, 10);
-}
 
 export async function POST(req: NextRequest) {
   const rateLimit = checkRateLimit(`register:${getClientIp(req)}`, RATE_LIMITS.AUTH);
@@ -61,29 +50,8 @@ export async function POST(req: NextRequest) {
     let departmentId: string | null = null;
 
     if (role === "STUDENT") {
-      const universityNameTrimmed = universityName!.trim();
-      const university =
-        (await db.university.findFirst({
-          where: { name: { equals: universityNameTrimmed, mode: "insensitive" } },
-          select: { id: true },
-        })) ??
-        (await db.university.create({
-          data: { name: universityNameTrimmed, shortName: deriveShortName(universityNameTrimmed) },
-          select: { id: true },
-        }));
-      universityId = university.id;
-
-      const departmentNameTrimmed = departmentName!.trim();
-      const department =
-        (await db.department.findFirst({
-          where: { universityId, name: { equals: departmentNameTrimmed, mode: "insensitive" } },
-          select: { id: true },
-        })) ??
-        (await db.department.create({
-          data: { universityId, name: departmentNameTrimmed },
-          select: { id: true },
-        }));
-      departmentId = department.id;
+      universityId = await findOrCreateUniversity(universityName!);
+      departmentId = await findOrCreateDepartment(universityId, departmentName!);
     }
 
     const user = await db.$transaction(async (tx) => {

@@ -11,6 +11,7 @@ const ROLE_HOME: Record<Role, string> = {
 const AUTH_PAGES = ["/login", "/signup"];
 const PUBLIC_PAGES = ["/", "/login", "/signup", "/forgot-password", "/reset-password", "/admin/setup", "/api/admin/bootstrap"];
 const VERIFY_EMAIL_PAGE = "/verify-email";
+const COMPLETE_PROFILE_PAGE = "/complete-profile";
 
 export default auth((req) => {
   const { nextUrl } = req;
@@ -34,6 +35,33 @@ export default auth((req) => {
     // Preserve the intended destination so we can redirect back after login
     loginUrl.searchParams.set("callbackUrl", nextUrl.pathname);
     return NextResponse.redirect(loginUrl);
+  }
+
+  // Onboarding (/complete-profile) is ONLY for genuine new OAuth accounts:
+  //   • profile not yet complete, AND
+  //   • passwordless (Google users are created with hashedPassword = null), AND
+  //   • not an ADMIN, AND
+  //   • not an impersonated session.
+  // The passwordless + non-ADMIN checks are what stop legacy/credentials
+  // accounts (whose profileComplete may be false for historical reasons) from
+  // ever being funneled into role onboarding and silently rewritten.
+  const isOnboardingCandidate =
+    isLoggedIn &&
+    session?.user?.profileComplete === false &&
+    session?.user?.hasPassword === false &&
+    role !== "ADMIN" &&
+    !session?.user?.impersonatorId;
+
+  // Onboarding candidate anywhere but the page itself → send them to finish it.
+  if (isOnboardingCandidate && path !== COMPLETE_PROFILE_PAGE) {
+    return NextResponse.redirect(new URL(COMPLETE_PROFILE_PAGE, req.url));
+  }
+
+  // Anyone who is NOT an onboarding candidate (already complete, ADMIN, or a
+  // legacy password account) must never sit on /complete-profile → dashboard.
+  if (isLoggedIn && !isOnboardingCandidate && path === COMPLETE_PROFILE_PAGE) {
+    const home = role ? ROLE_HOME[role] : "/student";
+    return NextResponse.redirect(new URL(home, req.url));
   }
 
   // Unverified user → hard-gate to /verify-email until they verify their

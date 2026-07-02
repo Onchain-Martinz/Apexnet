@@ -1,56 +1,73 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { signIn } from "next-auth/react";
-import { EmailInput, Input, PasswordInput } from "@/components/ui/input";
+import { useSession } from "next-auth/react";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { GoogleButton } from "@/components/auth/google-button";
-import { AuthErrorBanner } from "@/components/auth/auth-error-banner";
-import { registerSchema } from "@/lib/validations/auth";
+import { completeProfileSchema } from "@/lib/validations/auth";
 import { cn } from "@/lib/utils/cn";
+import type { Role as PrismaRole } from "@prisma/client";
 
 type Role = "STUDENT" | "LECTURER";
 
 const LEVELS = [100, 200, 300, 400, 500];
 
+const ROLE_HOME: Record<Role, string> = {
+  STUDENT: "/student",
+  LECTURER: "/lecturer",
+};
+
 type FieldErrors = {
   name?: string;
-  email?: string;
-  password?: string;
-  confirmPassword?: string;
   universityName?: string;
   departmentName?: string;
   level?: string;
 };
 
-
-export default function SignupPage() {
+export default function CompleteProfilePage() {
   const router = useRouter();
+  const { data: session, status, update } = useSession();
 
   const [role, setRole] = useState<Role>("STUDENT");
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [universityName, setUniversityName] = useState("");
   const [departmentName, setDepartmentName] = useState("");
   const [level, setLevel] = useState("");
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [globalError, setGlobalError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [prefilled, setPrefilled] = useState(false);
+
+  // Route guards: unauthenticated → login; already-complete → dashboard.
+  useEffect(() => {
+    if (status === "loading") return;
+
+    if (status === "unauthenticated" || !session?.user) {
+      router.replace("/login");
+      return;
+    }
+
+    if (session.user.profileComplete) {
+      const r = (session.user.role as PrismaRole) ?? "STUDENT";
+      router.replace(ROLE_HOME[r as Role] ?? "/student");
+      return;
+    }
+
+    // Prefill the Google-provided name once.
+    if (!prefilled) {
+      setName(session.user.name ?? "");
+      setPrefilled(true);
+    }
+  }, [status, session, router, prefilled]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setGlobalError("");
     setFieldErrors({});
 
-    const parsed = registerSchema.safeParse({
+    const parsed = completeProfileSchema.safeParse({
       name,
-      email,
-      password,
-      confirmPassword,
       role,
       universityName,
       departmentName,
@@ -70,15 +87,11 @@ export default function SignupPage() {
     setLoading(true);
 
     try {
-      // 1. Create the account
-      const res = await fetch("/api/auth/register", {
+      const res = await fetch("/api/auth/complete-profile", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name,
-          email,
-          password,
-          confirmPassword,
           role,
           ...(role === "STUDENT" ? { universityName, departmentName, level } : {}),
         }),
@@ -87,25 +100,14 @@ export default function SignupPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setGlobalError(data.error ?? "Registration failed. Please try again.");
+        setGlobalError(data.error ?? "Something went wrong. Please try again.");
         return;
       }
 
-      // 2. Auto sign-in after successful registration
-      const result = await signIn("credentials", {
-        email: email.toLowerCase().trim(),
-        password,
-        redirect: false,
-      });
-
-      if (!result?.ok) {
-        // Account created but sign-in failed — redirect to login
-        router.push("/login");
-        return;
-      }
-
-      // 3. New accounts are unverified — send them to /verify-email
-      router.push("/verify-email");
+      // Refresh the session token so it reflects the new role + profileComplete
+      // (POST to /api/auth/session triggers the jwt "update" branch), then route.
+      await update({});
+      router.push(ROLE_HOME[role]);
       router.refresh();
     } catch {
       setGlobalError("Something went wrong. Please try again.");
@@ -114,22 +116,22 @@ export default function SignupPage() {
     }
   }
 
+  // Avoid flashing the form before the guard resolves.
+  if (status === "loading" || !session?.user || session.user.profileComplete) {
+    return null;
+  }
+
   return (
     <div className="animate-fade-in">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          Create your account
+          Complete your profile
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Join students and lecturers across Africa
+          Tell us a little about you to finish setting up your account
         </p>
       </div>
-
-      {/* Google sign-in error banner (?error= from the OAuth flow) */}
-      <Suspense>
-        <AuthErrorBanner />
-      </Suspense>
 
       {/* Global error banner */}
       {globalError && (
@@ -140,15 +142,6 @@ export default function SignupPage() {
           {globalError}
         </div>
       )}
-
-      {/* Google onboarding lane — new users can skip the password form */}
-      <GoogleButton callbackUrl="/student" />
-
-      <div className="my-5 flex items-center gap-3">
-        <div className="h-px flex-1 bg-border" />
-        <span className="text-xs text-muted-foreground">or</span>
-        <div className="h-px flex-1 bg-border" />
-      </div>
 
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
         {/* Role selector — Apple-style segmented control */}
@@ -182,18 +175,6 @@ export default function SignupPage() {
           value={name}
           onChange={(e) => setName(e.target.value)}
           error={fieldErrors.name}
-          disabled={loading}
-        />
-
-        <EmailInput
-          label="Email"
-          placeholder="you@university.edu.ng"
-          autoComplete="email"
-          autoCapitalize="none"
-          inputMode="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          error={fieldErrors.email}
           disabled={loading}
         />
 
@@ -255,55 +236,15 @@ export default function SignupPage() {
           </>
         )}
 
-        <PasswordInput
-          label="Password"
-          id="new-password"
-          placeholder="Min. 8 characters"
-          autoComplete="new-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          error={fieldErrors.password}
-          hint="Must contain an uppercase letter and a number"
-          disabled={loading}
-        />
-
-        <PasswordInput
-          label="Confirm password"
-          id="confirm-password"
-          placeholder="Re-enter your password"
-          autoComplete="new-password"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          error={fieldErrors.confirmPassword}
-          disabled={loading}
-        />
-
         <Button
           type="submit"
           className="w-full mt-2"
           size="lg"
           loading={loading}
         >
-          {loading ? "Creating account…" : "Create account"}
+          {loading ? "Finishing up…" : "Finish setup"}
         </Button>
       </form>
-
-      <p className="mt-4 text-center text-[11px] text-muted-foreground leading-relaxed px-4">
-        By creating an account you agree to our{" "}
-        <span className="underline underline-offset-2 cursor-pointer">Terms of Service</span>
-        {" "}and{" "}
-        <span className="underline underline-offset-2 cursor-pointer">Privacy Policy</span>.
-      </p>
-
-      <p className="mt-6 text-center text-sm text-muted-foreground">
-        Already have an account?{" "}
-        <Link
-          href="/login"
-          className="font-medium text-primary hover:underline underline-offset-4"
-        >
-          Sign in
-        </Link>
-      </p>
     </div>
   );
 }
