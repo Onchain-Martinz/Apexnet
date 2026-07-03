@@ -2,11 +2,14 @@
 
 import * as Sentry from "@sentry/nextjs";
 import { useEffect } from "react";
+// This boundary replaces the entire <html> tree, so it does NOT inherit the
+// root layout's CSS. Import the same global stylesheet explicitly so the
+// fallback is always styled — otherwise a server-rendered error could paint as
+// raw, unstyled HTML.
+import "@/styles/globals.css";
 
 // Root-level React error boundary. Next.js renders this when an uncaught error
-// escapes the root layout. It replaces the entire <html> tree, so it cannot
-// rely on the root layout's CSS imports. Tailwind classes are still available
-// because they are injected via the global stylesheet from the Next.js build.
+// escapes the root layout.
 
 export default function GlobalError({
   error,
